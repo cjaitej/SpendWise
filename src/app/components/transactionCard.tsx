@@ -6,7 +6,6 @@ type TransactionCardProps = {
   amount: number;
   category: string;
   time: string;
-  iconBg: string;
   credited: boolean;
 };
 
@@ -15,7 +14,6 @@ export default function TransactionCard({
   amount,
   category,
   time,
-  iconBg,
   credited,
 }: TransactionCardProps) {
   return (

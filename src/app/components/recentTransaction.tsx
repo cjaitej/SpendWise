@@ -28,7 +28,6 @@ export default function RecentTransactions() {
         amount={450}
         category="Food"
         time="Today, 8:45 PM"
-        iconBg="bg-food"
         credited={false}
       />
       <TransactionCard
@@ -36,7 +35,6 @@ export default function RecentTransactions() {
         amount={450}
         category="Food"
         time="Today, 8:45 PM"
-        iconBg="bg-food"
         credited={true}
       />
       <TransactionCard
@@ -44,7 +42,6 @@ export default function RecentTransactions() {
         amount={450}
         category="Food"
         time="Today, 8:45 PM"
-        iconBg="bg-food"
         credited={true}
       />
     </View>
