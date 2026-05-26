@@ -3,3 +3,63 @@
 @import "tailwindcss/utilities.css";
 
 @import "nativewind/theme";
+
+@theme {
+  /* PRIMARY BRAND */
+  --color-primary: #00a878;
+  --color-primary-dark: #00875f;
+  --color-primary-light: #e6f7f3;
+
+  /* BACKGROUNDS & SURFACES */
+  --color-background: #f4f6f9;
+  --color-card: #ffffff;
+  --color-surface: #eef1f5;
+  --color-input: #f4f6f9;
+
+  /* TEXT HIERARCHY */
+  --color-content-main: #0d1b2a;
+  --color-content-sub: #5a6a7a;
+  --color-content-muted: #9aaab8;
+  --color-content-white: #ffffff;
+
+  /* UI ELEMENTS */
+  --color-border: #e4e9f0;
+  --color-divider: #edf0f5;
+
+  /* TABS */
+  --color-tab-active: #00a878;
+  --color-tab-inactive: #9aaab8;
+  --color-tab-bg: #ffffff;
+
+  /* STATUSES */
+  --color-success: #00a878;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  /* CATEGORIES */
+  --color-food: #f97316;
+  --color-shopping: #3b82f6;
+  --color-travel: #f59e0b;
+  --color-entertainment: #8b5cf6;
+  --color-bills: #ef4444;
+
+  /* GRADIENTS */
+  --color-gradient-start: #0d7a5f;
+  --color-gradient-end: #1aab80;
+
+  /* ICONS */
+  --color-icon-primary: #0d1b2a;
+  --color-icon-secondary: #5a6a7a;
+
+  /* AI FEATURE */
+  --color-ai-primary: #7c3aed;
+  --color-ai-light: #ede9fe;
+
+  /* CHARTS */
+  --color-chart-green: #00a878;
+  --color-chart-blue: #3b82f6;
+  --color-chart-orange: #f97316;
+  --color-chart-purple: #8b5cf6;
+  --color-chart-gray: #cbd5e1;
+}

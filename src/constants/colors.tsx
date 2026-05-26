@@ -1,62 +1,37 @@
-export const Colors = {
-  // PRIMARY BRAND
-  primary: "#22C55E", // Main green
-  primaryDark: "#16A34A",
-  primaryLight: "#DCFCE7",
+export default function getIconBg(title: string) {
+  const alphabetColors: Record<string, string> = {
+    A: "#F97316",
+    B: "#3B82F6",
+    C: "#F59E0B",
+    D: "#8B5CF6",
+    E: "#EF4444",
+    F: "#00A878",
+    G: "#7C3AED",
 
-  // BACKGROUNDS
-  background: "#F8FAFC", // App background
-  card: "#FFFFFF",
-  surface: "#F1F5F9",
-  input: "#FFFFFF",
+    H: "#0EA5E9",
+    I: "#14B8A6",
+    J: "#EC4899",
+    K: "#6366F1",
+    L: "#22C55E",
+    M: "#EAB308",
+    N: "#F43F5E",
 
-  // TEXT
-  textPrimary: "#0F172A",
-  textSecondary: "#64748B",
-  textMuted: "#94A3B8",
-  textWhite: "#FFFFFF",
+    O: "#10B981",
+    P: "#8B5CF6",
+    Q: "#06B6D4",
+    R: "#84CC16",
+    S: "#EF4444",
+    T: "#00A878",
+    U: "#F97316",
 
-  // BORDERS
-  border: "#E2E8F0",
-  divider: "#EDF2F7",
+    V: "#3B82F6",
+    W: "#A855F7",
+    X: "#E11D48",
+    Y: "#14B8A6",
+    Z: "#F59E0B",
+  };
 
-  // TABS
-  tabActive: "#22C55E",
-  tabInactive: "#94A3B8",
-  tabBackground: "#FFFFFF",
+  const firstLetter = title.charAt(0).toUpperCase();
 
-  // STATUS
-  success: "#22C55E",
-  warning: "#F59E0B",
-  danger: "#EF4444",
-  info: "#3B82F6",
-
-  // CATEGORY COLORS
-  food: "#10B981",
-  shopping: "#3B82F6",
-  travel: "#F59E0B",
-  entertainment: "#8B5CF6",
-  bills: "#EF4444",
-
-  // GRADIENTS
-  gradientStart: "#34D399",
-  gradientEnd: "#10B981",
-
-  // ICONS
-  iconPrimary: "#0F172A",
-  iconSecondary: "#64748B",
-
-  // SHADOW
-  shadow: "rgba(15, 23, 42, 0.08)",
-
-  // AI SECTION
-  aiPrimary: "#8B5CF6",
-  aiLight: "#F3E8FF",
-
-  // CHART COLORS
-  chartGreen: "#10B981",
-  chartBlue: "#3B82F6",
-  chartOrange: "#F59E0B",
-  chartPurple: "#8B5CF6",
-  chartGray: "#CBD5E1",
-};
+  return alphabetColors[firstLetter] || "#00A878";
+}
