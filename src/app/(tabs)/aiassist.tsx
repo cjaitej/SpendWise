@@ -129,7 +129,7 @@ export default function Aiassist() {
     setMessage("");
     setAIMessageLoading(true);
     try {
-      const response = await fetch("http://172.23.196.133:3000/chat", {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/chat`, {
         method: "POST",
 
         headers: {
