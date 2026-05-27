@@ -75,7 +75,7 @@ function ChatBox({ chat }: { chat: Message[] }) {
       {chat.map((item, index) => (
         <View
           key={index}
-          className={`p-3 rounded-2xl max-w-90 border ${
+          className={`p-3 rounded-2xl max-w-85 border ${
             item.user === "AI"
               ? "bg-primary self-start border-primary"
               : "bg-card border-border self-end"
@@ -191,7 +191,7 @@ export default function Aiassist() {
                 setDisableSend(false);
               }}
             >
-              <Ionicons name="create-outline" size={16} color="#111827" />
+              <Ionicons name="duplicate-outline" size={18} className="p-2" />
             </TouchableOpacity>
           </View>
           <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
