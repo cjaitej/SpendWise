@@ -1,8 +1,27 @@
+import { transactions } from "@/constants/transactions";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 import TransactionCard from "./transactionCard";
 
 export default function RecentTransactions() {
+  const router = useRouter();
+
+  const today = new Date();
+  const todayString = today.toISOString().split("T")[0];
+
+  const todayTransaction = transactions.filter(
+    (item) => new Date(item.date).toISOString().split("T")[0] === todayString,
+  );
+
+  function handleTime(dateString: string) {
+    const time = new Date(dateString).toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return time;
+  }
+
   return (
     <View>
       <View className="flex-row justify-between">
@@ -10,7 +29,12 @@ export default function RecentTransactions() {
           Recent Transaction
         </Text>
 
-        <TouchableOpacity className="flex-row gap-1 items-center ">
+        <TouchableOpacity
+          className="flex-row gap-1 items-center "
+          onPress={() => {
+            router.push("/(tabs)/transactions");
+          }}
+        >
           <Text className="text-content-main font-medium text-base">
             View all
           </Text>
@@ -23,27 +47,24 @@ export default function RecentTransactions() {
         </TouchableOpacity>
       </View>
 
-      <TransactionCard
-        title="Swiggy"
-        amount={450}
-        category="Food"
-        time="Today, 8:45 PM"
-        credited={false}
-      />
-      <TransactionCard
-        title="Zomato"
-        amount={450}
-        category="Food"
-        time="Today, 8:45 PM"
-        credited={true}
-      />
-      <TransactionCard
-        title="Amazon"
-        amount={450}
-        category="Food"
-        time="Today, 8:45 PM"
-        credited={true}
-      />
+      <View className="flex-1 gap-4">
+        {todayTransaction.length < 1 ? (
+          <Text className="text-sm mt-10 text-center">
+            No Recent Transaction
+          </Text>
+        ) : (
+          todayTransaction.map((item, index) => (
+            <TransactionCard
+              key={index}
+              title={item.title}
+              amount={item.amount}
+              category={item.category}
+              time={handleTime(item.date)}
+              credited={item.credited}
+            />
+          ))
+        )}
+      </View>
     </View>
   );
 }
