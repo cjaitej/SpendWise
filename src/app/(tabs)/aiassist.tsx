@@ -1,6 +1,8 @@
+import { transactions } from "@/constants/transactions";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,21 +18,74 @@ interface Message {
   message: string;
 }
 
+function formatAIMessage(text: string) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1") // remove markdown bold
+    .replace(/\*/g, "•") // bullets
+    .replace(/\n{2,}/g, "\n\n") // clean spacing
+    .trim();
+}
+
+function Dot({ delay }: { delay: number }) {
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+
+        Animated.timing(translateY, {
+          toValue: -6,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ translateY }],
+      }}
+      className="w-2 h-2 rounded-full bg-white"
+    />
+  );
+}
+
+export function ChatLoading() {
+  return (
+    <View className="px-4 py-5 rounded-2xl bg-primary self-start flex-row gap-2">
+      <Dot delay={0} />
+      <Dot delay={150} />
+      <Dot delay={300} />
+    </View>
+  );
+}
+
 function ChatBox({ chat }: { chat: Message[] }) {
   return (
     <View className="flex-1 gap-3 mt-5">
       {chat.map((item, index) => (
         <View
           key={index}
-          className={`p-3 rounded-2xl ${
+          className={`p-3 rounded-2xl max-w-90 border ${
             item.user === "AI"
-              ? "bg-primary self-start"
-              : "bg-card border border-border self-end"
+              ? "bg-primary self-start border-primary"
+              : "bg-card border-border self-end"
           }`}
         >
           <Text
-            className={`${
-              item.user === "AI" ? "text-white" : "text-content-main"
+            className={`leading-6 text-base ${
+              item.user === "AI"
+                ? "text-white font-medium"
+                : "text-content-main"
             }`}
           >
             {item.message}
@@ -52,31 +107,71 @@ export default function Aiassist() {
 
   const [message, setMessage] = useState<string>("");
   const [disableSend, setDisableSend] = useState<boolean>(false);
-
+  const [aiMessageLoading, setAIMessageLoading] = useState<boolean>(false);
   const [chat, setChat] = useState<Message[]>([]);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const handleSend = (customMessage?: string) => {
+  const handleSend = async (customMessage?: string) => {
     const finalMessage = customMessage || message;
 
-    setDisableSend(true);
     if (!finalMessage.trim()) return;
+
+    setDisableSend(true);
 
     const userMessage: Message = {
       user: "user",
       message: finalMessage,
     };
 
-    const AIMessage: Message = {
-      user: "AI",
-      message: "I am Offline righitnow. Please Try Again Later.",
-    };
-
-    setChat((prev) => [...prev, userMessage, AIMessage]);
+    // instantly show user message
+    setChat((prev) => [...prev, userMessage]);
 
     setMessage("");
+    setAIMessageLoading(true);
+    try {
+      const response = await fetch("http://172.23.196.133:3000/chat", {
+        method: "POST",
 
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          message: finalMessage,
+
+          history: chat,
+
+          transactions: transactions,
+        }),
+      });
+
+      const data = await response.json();
+
+      const aiMessage: Message = {
+        user: "AI",
+        message: formatAIMessage(data.message),
+      };
+
+      setChat((prev) => [...prev, aiMessage]);
+    } catch (err) {
+      console.log(err);
+
+      const errorMessage: Message = {
+        user: "AI",
+        message: "Something went wrong.",
+      };
+
+      setChat((prev) => [...prev, errorMessage]);
+    }
+    setAIMessageLoading(false);
     setDisableSend(false);
   };
+
+  useEffect(() => {
+    scrollViewRef.current?.scrollToEnd({
+      animated: true,
+    });
+  }, [chat, aiMessageLoading]);
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
@@ -93,13 +188,13 @@ export default function Aiassist() {
             <TouchableOpacity
               onPress={() => {
                 setChat([]);
-                setDisableSend(true);
+                setDisableSend(false);
               }}
             >
               <Ionicons name="create-outline" size={16} color="#111827" />
             </TouchableOpacity>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
             {chat.length > 0 ? (
               <ChatBox chat={chat} />
             ) : (
@@ -131,6 +226,7 @@ export default function Aiassist() {
                 </View>
               </View>
             )}
+            {aiMessageLoading ? <ChatLoading /> : null}
           </ScrollView>
 
           <View className="pb-5 items-center gap-1 bg-card">
