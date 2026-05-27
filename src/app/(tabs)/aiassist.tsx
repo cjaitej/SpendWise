@@ -203,7 +203,7 @@ export default function Aiassist() {
                   Hi, Jaitej! 👋
                 </Text>
 
-                <Text className="text-content-main text-xl font-semibold max-w-[250px] mt-2 mb-10">
+                <Text className="text-content-main text-xl font-semibold max-w-62.5 mt-2 mb-10">
                   How can I help you with your finances today?
                 </Text>
 
