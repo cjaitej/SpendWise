@@ -127,7 +127,7 @@ function TransactionsList({
     );
 
   return (
-    <ScrollView>
+    <ScrollView showsVerticalScrollIndicator={false}>
       <View className="flex gap-4">
         {todayTransaction.length <= 0 ? (
           ""
