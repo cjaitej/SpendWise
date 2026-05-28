@@ -1,16 +1,15 @@
 {
   "expo": {
-    "name": "SpendWise2",
-    "slug": "SpendWise2",
+    "name": "SpendWise",
+    "slug": "SpendWise",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "spendwise2",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -18,7 +17,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "READ_SMS"
+      ],
+      "predictiveBackGestureEnabled": false,
+      "package": "com.strange_me.SpendWise"
     },
     "web": {
       "output": "static",
