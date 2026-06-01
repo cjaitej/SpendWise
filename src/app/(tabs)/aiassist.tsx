@@ -47,7 +47,7 @@ function Dot({ delay }: { delay: number }) {
         }),
       ]),
     ).start();
-  }, []);
+  }, [delay, translateY]);
 
   return (
     <Animated.View
@@ -138,9 +138,7 @@ export default function Aiassist() {
 
         body: JSON.stringify({
           message: finalMessage,
-
           history: chat,
-
           transactions: transactions,
         }),
       });
@@ -229,14 +227,16 @@ export default function Aiassist() {
             {aiMessageLoading ? <ChatLoading /> : null}
           </ScrollView>
 
+          {/* Updated Input Container */}
           <View className="pb-5 items-center gap-1 bg-card">
-            <View className="flex-row justify-between items-center pl-4 pr-2 py-1 border border-border rounded-full bg-content-main/90">
+            <View className="flex-row justify-between items-center pl-4 pr-2 py-1 border border-border rounded-full bg-surface shadow-sm w-full">
               <TextInput
-                placeholder="Ask anything about your finances..."
+                placeholder="Ask anything..."
                 placeholderTextColor="#9aaab8"
-                className="flex-1 text-card"
+                className="flex-1 text-content-main text-base"
                 value={message}
                 onChangeText={(txt) => setMessage(txt)}
+                onSubmitEditing={() => handleSend()}
               />
 
               <TouchableOpacity
@@ -247,11 +247,10 @@ export default function Aiassist() {
                 <Ionicons name="arrow-up" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
-            <View className="flex-row items-center justify-center">
+            <View className="flex-row items-center justify-center mt-1">
               <Ionicons name="information-circle" size={15} color="#5a6a7a" />
-
               <Text className="text-sm text-content-sub ml-1">
-                AI can make mistake. Verify important info.
+                AI can make mistakes. Verify important info.
               </Text>
             </View>
           </View>
