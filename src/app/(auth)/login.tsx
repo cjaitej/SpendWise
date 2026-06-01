@@ -19,11 +19,13 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const { signIn } = useAuth();
 
   const handleSignIn = async () => {
+    setIsLoading(true);
     try {
       await signIn(email, password);
     } catch (error: any) {
@@ -38,6 +40,8 @@ export default function LoginScreen() {
           error.message || "Invalid email or password",
         );
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -100,6 +104,7 @@ export default function LoginScreen() {
                   </Text>
 
                   <TextInput
+                    editable={!isLoading}
                     placeholder="Enter your email address"
                     value={email}
                     onChangeText={setEmail}
@@ -125,17 +130,19 @@ export default function LoginScreen() {
                       Password
                     </Text>
                     <TextInput
+                      editable={!isLoading}
                       placeholder="Password"
                       secureTextEntry={!showPassword}
                       value={password}
                       onChangeText={setPassword}
                       autoCapitalize="none"
-                      textContentType="password" // Added for autofill
+                      textContentType="password"
                       className="mt-1 text-sm text-black p-0 placeholder:text-content-muted"
                     />
                   </View>
                   <TouchableOpacity
                     className="mr-5"
+                    disabled={isLoading}
                     onPress={() => setShowPassword(!showPassword)}
                   >
                     <Ionicons
@@ -152,12 +159,16 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            {/* Disabled logic applied here */}
             <TouchableOpacity
-              className="justify-center items-center py-4 rounded-xl bg-primary"
+              disabled={isLoading}
+              className={`justify-center items-center py-4 rounded-xl ${
+                isLoading ? "bg-gray-400" : "bg-primary"
+              }`}
               onPress={handleSignIn}
             >
-              <Text className="text-content-white font-semibold">Login</Text>
+              <Text className="text-content-white font-semibold">
+                {isLoading ? "Logging in..." : "Login"}
+              </Text>
             </TouchableOpacity>
 
             <View className="flex-row items-center my-6">

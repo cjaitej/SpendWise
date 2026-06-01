@@ -44,6 +44,7 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setConfirmShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Added loading state
 
   const { signUp } = useAuth();
 
@@ -55,7 +56,6 @@ export default function SignupScreen() {
   const hasOnlyAscii = /^[\x20-\x7E]+$/.test(password);
   const passMatches = confirmPassword !== "" && confirmPassword === password;
 
-  // FIX 2: Form validation logic created
   const isFormValid =
     email.trim() !== "" &&
     hasMinLength &&
@@ -66,6 +66,7 @@ export default function SignupScreen() {
     passMatches;
 
   const handleSignUp = async () => {
+    setIsLoading(true); // Disable inputs
     try {
       await signUp(email, password);
 
@@ -75,6 +76,8 @@ export default function SignupScreen() {
       );
     } catch (error: any) {
       Alert.alert("Signup Failed", error.message);
+    } finally {
+      setIsLoading(false); // Re-enable inputs
     }
   };
 
@@ -133,6 +136,7 @@ export default function SignupScreen() {
                   </Text>
 
                   <TextInput
+                    editable={!isLoading}
                     placeholder="Enter your email address"
                     value={email}
                     onChangeText={setEmail}
@@ -159,11 +163,12 @@ export default function SignupScreen() {
                       Password
                     </Text>
                     <TextInput
+                      editable={!isLoading}
                       placeholder="Create a strong password"
                       secureTextEntry={!showPassword}
                       value={password}
                       autoCapitalize="none"
-                      textContentType="newPassword" // FIX 3: Added autofill support
+                      textContentType="newPassword"
                       onChangeText={(val) => {
                         setConfirmPassword("");
                         setPassword(val);
@@ -173,6 +178,7 @@ export default function SignupScreen() {
                   </View>
                   <TouchableOpacity
                     className="mr-5"
+                    disabled={isLoading}
                     onPress={() => setShowPassword(!showPassword)}
                   >
                     <Ionicons
@@ -208,17 +214,19 @@ export default function SignupScreen() {
                       Confirm Password
                     </Text>
                     <TextInput
+                      editable={!isLoading}
                       placeholder="Confirm your password"
                       secureTextEntry={!showConfirmPassword}
                       value={confirmPassword}
                       autoCapitalize="none"
-                      textContentType="newPassword" // FIX 3: Added autofill support
+                      textContentType="newPassword"
                       onChangeText={setConfirmPassword}
                       className="mt-1 text-sm text-black p-0 placeholder:text-content-muted"
                     />
                   </View>
                   <TouchableOpacity
                     className="mr-5"
+                    disabled={isLoading}
                     onPress={() => setConfirmShowPassword(!showConfirmPassword)}
                   >
                     <Ionicons
@@ -233,13 +241,14 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            {/* FIX 2: Applied disabled logic & dynamic styling */}
             <TouchableOpacity
-              disabled={!isFormValid}
-              className={`justify-center items-center py-4 rounded-xl ${isFormValid ? "bg-primary" : "bg-content-sub"}`}
+              disabled={!isFormValid || isLoading}
+              className={`justify-center items-center py-4 rounded-xl ${isFormValid && !isLoading ? "bg-primary" : "bg-content-sub"}`}
               onPress={handleSignUp}
             >
-              <Text className="text-content-white font-semibold">Sign Up</Text>
+              <Text className="text-content-white font-semibold">
+                {isLoading ? "Signing Up..." : "Sign Up"}
+              </Text>
             </TouchableOpacity>
 
             <View className="flex-row items-center my-6">
