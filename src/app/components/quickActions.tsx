@@ -1,19 +1,34 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import Index from "./smsModal";
 
-type Props = {
+interface Props {
   iconName: keyof typeof Ionicons.glyphMap;
   text: string;
   color: string;
-  to: any;
-};
+  to?: any;
+  onPress?: () => void;
+}
 
-function QuickActionsCard({ iconName, text, color, to }: Props) {
+function QuickActionsCard({ iconName, text, color, to, onPress }: Props) {
   const router = useRouter();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+      return;
+    }
+
+    if (to) {
+      router.push(to);
+    }
+  };
+
   return (
     <TouchableOpacity
-      onPress={() => router.push(to)}
+      onPress={handlePress}
       className="w-22.5 justify-center items-center bg-card py-4 rounded-2xl border border-border gap-2"
     >
       <Ionicons name={iconName} size={40} className={color} />
@@ -26,18 +41,29 @@ function QuickActionsCard({ iconName, text, color, to }: Props) {
 }
 
 export default function QuickActions() {
+  const [showSmsModal, setShowSmsModal] = useState(false);
+
   return (
     <View className="gap-3">
       <Text className="text-content-main font-bold text-lg">Quick Actions</Text>
 
       <View className="flex-row justify-between">
         <QuickActionsCard
-          iconName="chatbubble-ellipses-outline"
-          text="Ask AI"
+          iconName="sync-outline"
+          text="Sync SMS"
           color="text-success"
-          to="/(tabs)/aiassist"
+          onPress={() => setShowSmsModal(true)}
         />
 
+        {showSmsModal ? (
+          <Index
+            onClose={() => {
+              setShowSmsModal(false);
+            }}
+          />
+        ) : (
+          ""
+        )}
         <QuickActionsCard
           iconName="scan-outline"
           text="Scan Receipt"

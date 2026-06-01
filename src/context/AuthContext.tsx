@@ -50,6 +50,7 @@ interface AuthContextType {
   updateUser: (userData: Partial<User>) => Promise<void>;
   createBudget: (budgetData: Partial<Budget>) => Promise<void>;
   getMonthlyBudget: () => Promise<number | null>;
+  createTransactions: (transactions: Partial<Transaction>[]) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -204,6 +205,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const createTransactions = async (transactions: Partial<Transaction>[]) => {
+    const transactionsWithUser = transactions.map((tx) => ({
+      ...tx,
+      user_id: user?.id,
+    }));
+
+    const { error } = await supabase
+      .from("transactions")
+      .insert(transactionsWithUser);
+
+    if (error) throw error;
+  };
+
   const getMonthlyBudget = async (): Promise<number | null> => {
     const { data, error } = await supabase
       .from("budgets")
@@ -231,6 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateUser,
         createBudget,
         getMonthlyBudget,
+        createTransactions,
       }}
     >
       {children}
