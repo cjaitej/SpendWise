@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { TransactionProvider } from "@/context/FinanceContext";
 import { Redirect, Stack, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import "../global.css";
@@ -43,7 +44,9 @@ function RouteGuard() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RouteGuard />
+      <TransactionProvider>
+        <RouteGuard />
+      </TransactionProvider>
     </AuthProvider>
   );
 }

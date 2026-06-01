@@ -4,117 +4,145 @@ import * as ort from "onnxruntime-react-native";
 let session: ort.InferenceSession | null = null;
 let vocab: Record<string, number> | null = null;
 
-function encodeSimple(text: string, vocab: Record<string, number>) {
-  const words = text.toLowerCase().trim().split(/\s+/);
+// ─── WordPiece tokenizer ──────────────────────────────────────────────────────
 
-  const ids = [101];
+function wordpieceTokenize(
+  word: string,
+  vocab: Record<string, number>,
+): number[] {
+  // whole word hit
+  if (vocab[word] !== undefined) return [vocab[word]];
 
-  for (const word of words) {
-    ids.push(vocab[word] ?? 100);
+  const ids: number[] = [];
+  let remaining = word;
+  let isFirst = true;
+
+  while (remaining.length > 0) {
+    let found = false;
+    for (let end = remaining.length; end > 0; end--) {
+      const candidate = isFirst
+        ? remaining.slice(0, end)
+        : `##${remaining.slice(0, end)}`;
+      if (vocab[candidate] !== undefined) {
+        ids.push(vocab[candidate]);
+        remaining = remaining.slice(end);
+        isFirst = false;
+        found = true;
+        break;
+      }
+    }
+    if (!found) return [100]; // genuine UNK — no subword split possible
   }
 
-  ids.push(102);
+  return ids;
+}
+
+function encode(text: string, vocab: Record<string, number>) {
+  const words = text.toLowerCase().trim().split(/\s+/);
+  const input_ids = [101]; // [CLS]
+  // wordSpans[i] = { start, end } token index range for words[i]
+  const wordSpans: Array<{ start: number; end: number }> = [];
+
+  for (const word of words) {
+    const subIds = wordpieceTokenize(word, vocab);
+    const start = input_ids.length;
+    input_ids.push(...subIds);
+    wordSpans.push({ start, end: input_ids.length - 1 });
+  }
+
+  input_ids.push(102); // [SEP]
 
   return {
-    input_ids: ids,
-    attention_mask: Array(ids.length).fill(1),
+    input_ids,
+    attention_mask: Array(input_ids.length).fill(1),
     words,
+    wordSpans,
   };
 }
 
+// ─── Init / dispose ───────────────────────────────────────────────────────────
+
 export async function initializeMerchantExtractor() {
-  if (session && vocab) {
-    return;
-  }
+  if (session && vocab) return;
 
   const tokenizerJson = require("../../assets/models/tokenizer.json");
-
   vocab = tokenizerJson.model.vocab;
 
   const modelAsset = Asset.fromModule(
-    require("../../assets/models/merchant_all_MiniLM_L6_v2_mobile.onnx"),
+    require("../../assets/models/model.onnx"),
   );
-
   await modelAsset.downloadAsync();
 
-  if (!modelAsset.localUri) {
-    throw new Error("Failed to load model");
-  }
+  if (!modelAsset.localUri) throw new Error("Failed to load model");
 
   session = await ort.InferenceSession.create(modelAsset.localUri);
 }
 
-export async function extractMerchant(text: string): Promise<string | null> {
-  if (!session || !vocab) {
-    await initializeMerchantExtractor();
+export async function disposeMerchantExtractor() {
+  try {
+    if (session) await session.release?.();
+  } catch (err) {
+    console.warn("Failed to release session:", err);
   }
+  session = null;
+  vocab = null;
+}
 
-  if (!session || !vocab) {
-    throw new Error("Failed to initialize merchant extractor");
-  }
+// ─── Extraction ───────────────────────────────────────────────────────────────
 
-  const encoded = encodeSimple(text, vocab);
+export async function extractMerchant(text: string): Promise<string> {
+  if (!session || !vocab) await initializeMerchantExtractor();
+  if (!session || !vocab) throw new Error("Failed to initialize");
+
+  const encoded = encode(text, vocab);
 
   const inputIds = BigInt64Array.from(encoded.input_ids.map((x) => BigInt(x)));
-
   const attentionMask = BigInt64Array.from(
     encoded.attention_mask.map((x) => BigInt(x)),
   );
 
-  const feeds = {
+  const results = await session.run({
     input_ids: new ort.Tensor("int64", inputIds, [1, inputIds.length]),
     attention_mask: new ort.Tensor("int64", attentionMask, [
       1,
       attentionMask.length,
     ]),
-  };
-
-  const results = await session.run(feeds);
+  });
 
   const logits = results.logits;
 
-  const predictions: number[] = [];
-
+  // ── token-level predictions ─────────────────────────────────────────────────
+  const tokenPreds: number[] = [];
   for (let i = 0; i < logits.dims[1]; i++) {
     const base = i * 3;
-
     const o = Number(logits.data[base]);
     const b = Number(logits.data[base + 1]);
     const ii = Number(logits.data[base + 2]);
+    tokenPreds.push(b > o && b > ii ? 1 : ii > o && ii > b ? 2 : 0);
+  }
 
-    const max = Math.max(o, b, ii);
+  // ── map to word-level: use the first subword token's prediction ─────────────
+  const wordPreds = encoded.wordSpans.map(({ start }) => tokenPreds[start]);
 
-    if (max === o) {
-      predictions.push(0);
-    } else if (max === b) {
-      predictions.push(1);
+  // ── strict BIO decoding — identical to Python ───────────────────────────────
+  const merchantWords: string[] = [];
+  let foundB = false;
+
+  for (let i = 0; i < wordPreds.length; i++) {
+    const pred = wordPreds[i];
+    if (pred === 1) {
+      // B-MERCHANT
+      if (foundB) break; // second B = new entity, stop
+      merchantWords.push(encoded.words[i]);
+      foundB = true;
+    } else if (pred === 2) {
+      // I-MERCHANT
+      if (foundB) merchantWords.push(encoded.words[i]);
     } else {
-      predictions.push(2);
+      // O
+      if (foundB) break; // entity ended
     }
   }
 
-  const merchantTokens: string[] = [];
-
-  for (let i = 1; i < predictions.length - 1; i++) {
-    if (predictions[i] === 1 || predictions[i] === 2) {
-      merchantTokens.push(encoded.words[i - 1]);
-    }
-  }
-
-  const merchant = merchantTokens.join(" ").trim();
-  return merchant || "UNK";
-}
-
-export async function disposeMerchantExtractor() {
-  try {
-    if (session) {
-      // Depending on the onnxruntime-react-native version:
-      await session.release?.();
-    }
-  } catch (err) {
-    console.warn("Failed to release session:", err);
-  }
-
-  session = null;
-  vocab = null;
+  return merchantWords.join(" ").trim() || "UNK";
 }

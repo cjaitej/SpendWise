@@ -6,7 +6,7 @@ type TransactionCardProps = {
   amount: number;
   category: string;
   time: string;
-  credited: boolean;
+  credited: string;
 };
 
 export default function TransactionCard({
@@ -44,7 +44,7 @@ export default function TransactionCard({
       </View>
 
       <Text className="text-content-main text-[17px] font-semibold">
-        {credited ? "+" : "-"} ₹{amount}
+        {credited == "credit" ? "+" : "-"} ₹{amount}
       </Text>
     </View>
   );

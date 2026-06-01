@@ -10,7 +10,6 @@ export default function Home() {
     <SafeAreaView className="flex" edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="flex gap-5 px-5">
-          {/* Overview Card */}
           <Header />
           <OverviewCard />
           <QuickActions />

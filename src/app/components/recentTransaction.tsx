@@ -1,4 +1,4 @@
-import { transactions } from "@/constants/transactions";
+import { useTransaction } from "@/context/FinanceContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -6,12 +6,21 @@ import TransactionCard from "./transactionCard";
 
 export default function RecentTransactions() {
   const router = useRouter();
+  const { transactions } = useTransaction();
+
+  const sortedTransactions = [...transactions].sort(
+    (a, b) =>
+      new Date(b.transaction_date).getTime() -
+      new Date(a.transaction_date).getTime(),
+  );
 
   const today = new Date();
   const todayString = today.toISOString().split("T")[0];
 
-  const todayTransaction = transactions.filter(
-    (item) => new Date(item.date).toISOString().split("T")[0] === todayString,
+  const todayTransaction = sortedTransactions.filter(
+    (item) =>
+      new Date(item.transaction_date).toISOString().split("T")[0] ===
+      todayString,
   );
 
   function handleTime(dateString: string) {
@@ -56,11 +65,11 @@ export default function RecentTransactions() {
           todayTransaction.map((item, index) => (
             <TransactionCard
               key={index}
-              title={item.title}
+              title={item.merchant_name ?? "Unindentified"}
               amount={item.amount}
-              category={item.category}
-              time={handleTime(item.date)}
-              credited={item.credited}
+              category={item.category ?? "Others"}
+              time={handleTime(item.transaction_date)}
+              credited={item.transaction_type}
             />
           ))
         )}

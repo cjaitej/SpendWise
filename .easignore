@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+
+# Expo
+.expo
+.expo-shared
+
+# Git
+.git
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Local AI files
+.claude
+
+# Android build artifacts
+android/.gradle
+android/app/build
+android/build
+
+# Coverage
+coverage

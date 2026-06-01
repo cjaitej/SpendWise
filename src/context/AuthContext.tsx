@@ -48,9 +48,6 @@ interface AuthContextType {
   userNameAvailability: (username: string) => Promise<boolean>;
   signOut?: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
-  createBudget: (budgetData: Partial<Budget>) => Promise<void>;
-  getMonthlyBudget: () => Promise<number | null>;
-  createTransactions: (transactions: Partial<Transaction>[]) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -190,50 +187,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const createBudget = async (budgetData: Partial<Budget>) => {
-    const { error } = await supabase.from("budgets").insert({
-      user_id: budgetData.user_id,
-      amount: Number(budgetData.amount),
-      category: budgetData.category || null,
-      period_type: budgetData.period_type,
-      start_date: budgetData.start_date,
-    });
-
-    if (error) {
-      console.error(error);
-      throw error;
-    }
-  };
-
-  const createTransactions = async (transactions: Partial<Transaction>[]) => {
-    const transactionsWithUser = transactions.map((tx) => ({
-      ...tx,
-      user_id: user?.id,
-    }));
-
-    const { error } = await supabase
-      .from("transactions")
-      .insert(transactionsWithUser);
-
-    if (error) throw error;
-  };
-
-  const getMonthlyBudget = async (): Promise<number | null> => {
-    const { data, error } = await supabase
-      .from("budgets")
-      .select("amount")
-      .eq("user_id", user?.id)
-      .is("category", null)
-      .single();
-
-    if (error) {
-      console.log("Error", error);
-      return null;
-    }
-    console.log(data, data.amount);
-    return data.amount;
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -243,9 +196,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signUp,
         userNameAvailability,
         updateUser,
-        createBudget,
-        getMonthlyBudget,
-        createTransactions,
       }}
     >
       {children}

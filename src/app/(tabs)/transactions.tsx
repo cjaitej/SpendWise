@@ -1,8 +1,8 @@
-import { transactions } from "@/constants/transactions";
+import { Transaction, useTransaction } from "@/context/FinanceContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  ScrollView,
+  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
@@ -11,166 +11,161 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionCard from "../components/transactionCard";
 
-type Props = {
-  transactions: typeof transactions;
-  title: string;
-  date: string;
-  special: boolean;
-};
+function toLocalKey(d: Date) {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
 
-function DateCard({ transactions, title, date, special }: Props) {
-  if (special) {
-    title =
-      title +
-      " - " +
-      new Date(date).toLocaleDateString("en-IN", {
+function itemDateKey(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+type SectionHeader = { type: "header"; title: string };
+type SectionItem = { type: "item"; transaction: Transaction; special: boolean };
+type ListRow = SectionHeader | SectionItem;
+
+function buildListData(
+  transactions: Transaction[],
+  selectedCategory: string,
+  searchTransactions: string,
+): ListRow[] {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const todayKey = toLocalKey(today);
+  const yesterdayKey = toLocalKey(yesterday);
+
+  let filtered =
+    selectedCategory === "All"
+      ? transactions
+      : transactions.filter(
+          (item) => item.category === selectedCategory.toLowerCase(),
+        );
+
+  if (searchTransactions.trim() !== "") {
+    filtered = filtered.filter(
+      (item) =>
+        item.merchant_name?.toLowerCase().includes(searchTransactions) ||
+        item.category?.toLowerCase().includes(searchTransactions),
+    );
+  }
+
+  const todayItems = filtered.filter(
+    (item) => itemDateKey(item.transaction_date) === todayKey,
+  );
+  const yesterdayItems = filtered.filter(
+    (item) => itemDateKey(item.transaction_date) === yesterdayKey,
+  );
+  const olderItems = filtered.filter((item) => {
+    const key = itemDateKey(item.transaction_date);
+    return key !== todayKey && key !== yesterdayKey;
+  });
+
+  const groupedByMonth = olderItems.reduce(
+    (acc, transaction) => {
+      const month = new Date(transaction.transaction_date).toLocaleString(
+        "en-IN",
+        { month: "long", year: "numeric" },
+      );
+      if (!acc[month]) acc[month] = [];
+      acc[month].push(transaction);
+      return acc;
+    },
+    {} as Record<string, Transaction[]>,
+  );
+
+  const rows: ListRow[] = [];
+
+  if (todayItems.length > 0) {
+    const label =
+      "Today - " +
+      today.toLocaleDateString("en-IN", {
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-  }
-
-  function handleTime(special: boolean, dateString: string) {
-    if (special) {
-      const time = new Date(dateString).toLocaleTimeString("en-IN", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-      return time;
-    }
-
-    const date = new Date(dateString).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    return date;
-  }
-
-  return (
-    <View>
-      <Text className="text-content-sub font-semibold">{title}</Text>
-      {transactions.map((item, index) => (
-        <TransactionCard
-          key={index}
-          title={item.title}
-          amount={item.amount}
-          category={item.category}
-          time={handleTime(special, item.date)}
-          credited={item.credited}
-        />
-      ))}
-    </View>
-  );
-}
-
-function TransactionsList({
-  selectedCategory,
-  searchTransactions,
-}: {
-  selectedCategory: string;
-  searchTransactions: string;
-}) {
-  // obtaining date if today and yesterday
-  const today = new Date();
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const todayString = today.toISOString().split("T")[0];
-  const yesterdayString = yesterday.toISOString().split("T")[0];
-
-  // filtering the category and based on Date
-  let filteredTransactions =
-    selectedCategory === "All"
-      ? transactions
-      : transactions.filter((item) => item.category === selectedCategory);
-
-  filteredTransactions =
-    searchTransactions.trim() === ""
-      ? filteredTransactions
-      : filteredTransactions.filter(
-          (item) =>
-            item.title.toLowerCase().includes(searchTransactions) ||
-            item.category.toLowerCase().includes(searchTransactions),
-        );
-
-  const todayTransaction = filteredTransactions.filter(
-    (item) => new Date(item.date).toISOString().split("T")[0] === todayString,
-  );
-
-  const yesterdayTransaction = filteredTransactions.filter(
-    (item) =>
-      new Date(item.date).toISOString().split("T")[0] === yesterdayString,
-  );
-
-  const groupedByMonth = filteredTransactions
-    .filter((item) => {
-      const date = new Date(item.date).toISOString().split("T")[0];
-
-      return date !== todayString && date !== yesterdayString;
-    })
-    .reduce(
-      (acc, transaction) => {
-        const month = new Date(transaction.date).toLocaleString("en-IN", {
-          month: "long",
-          year: "numeric",
-        });
-
-        if (!acc[month]) {
-          acc[month] = [];
-        }
-
-        acc[month].push(transaction);
-
-        return acc;
-      },
-      {} as Record<string, typeof filteredTransactions>,
+    rows.push({ type: "header", title: label });
+    todayItems.forEach((t) =>
+      rows.push({ type: "item", transaction: t, special: true }),
     );
+  }
 
-  return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      <View className="flex gap-4">
-        {todayTransaction.length <= 0 ? (
-          ""
-        ) : (
-          <DateCard
-            transactions={todayTransaction}
-            title={"Today"}
-            date={todayString}
-            special={true}
-          />
-        )}
-        {yesterdayTransaction.length <= 0 ? (
-          ""
-        ) : (
-          <DateCard
-            transactions={yesterdayTransaction}
-            title={"Yesterday"}
-            date={yesterdayString}
-            special={true}
-          />
-        )}
-        {Object.entries(groupedByMonth).map(([month, data]) => (
-          <DateCard
-            key={month}
-            transactions={data}
-            title={month}
-            date={month}
-            special={false}
-          />
-        ))}
-      </View>
-    </ScrollView>
-  );
+  if (yesterdayItems.length > 0) {
+    const label =
+      "Yesterday - " +
+      yesterday.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    rows.push({ type: "header", title: label });
+    yesterdayItems.forEach((t) =>
+      rows.push({ type: "item", transaction: t, special: true }),
+    );
+  }
+
+  Object.entries(groupedByMonth).forEach(([month, items]) => {
+    rows.push({ type: "header", title: month });
+    items.forEach((t) =>
+      rows.push({ type: "item", transaction: t, special: false }),
+    );
+  });
+
+  return rows;
 }
 
 export default function Transactions() {
+  const { transactions } = useTransaction();
   const uniqueCategories = [
     "All",
-    ...new Set(transactions.map((item) => item.category)),
+    "Food",
+    "Shopping",
+    "Travel",
+    "Education",
+    "finance",
+    "Others",
   ];
 
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchTransactions, setSearchTransactions] = useState<string>("");
+
+  const listData = buildListData(
+    transactions,
+    selectedCategory,
+    searchTransactions.toLowerCase(),
+  );
+
+  function renderRow({ item }: { item: ListRow }) {
+    if (item.type === "header") {
+      return (
+        <Text className="text-content-sub font-semibold mb-1 mt-2">
+          {item.title}
+        </Text>
+      );
+    }
+
+    const t = item.transaction;
+    const time = item.special
+      ? new Date(t.transaction_date).toLocaleTimeString("en-IN", {
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : new Date(t.transaction_date).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+    return (
+      <TransactionCard
+        title={t.merchant_name ?? "Unidentified"}
+        amount={t.amount}
+        category={t.category ?? "Others"}
+        time={time}
+        credited={t.transaction_type}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
@@ -179,8 +174,8 @@ export default function Transactions() {
           <Text className="text-xl font-semibold">Transactions</Text>
         </View>
         <View className="gap-4">
-          <View className="flex-row justify-between items-center border border-border rounded-3xl px-2 ">
-            <TouchableOpacity className="w-11 h-11 rounded-full  items-center justify-center">
+          <View className="flex-row justify-between items-center border border-border rounded-3xl px-2">
+            <TouchableOpacity className="w-11 h-11 rounded-full items-center justify-center">
               <Ionicons name="search" size={20} className="text-content-sub" />
             </TouchableOpacity>
             <TextInput
@@ -191,37 +186,40 @@ export default function Transactions() {
               onChangeText={(text) => setSearchTransactions(text)}
             />
           </View>
-          <ScrollView
+          <FlatList
+            data={uniqueCategories}
             horizontal
             showsHorizontalScrollIndicator={false}
-            className="-mx-5"
+            keyExtractor={(item) => item}
+            style={{ marginHorizontal: -20 }}
             contentContainerStyle={{
               gap: 10,
               alignItems: "center",
               paddingHorizontal: 20,
             }}
-          >
-            {uniqueCategories.map((item, index) => (
+            renderItem={({ item }) => (
               <TouchableOpacity
-                key={index}
-                className={`${item == selectedCategory ? "bg-primary" : "bg-surface"} border border-border py-2 px-4 rounded-xl`}
+                className={`${item === selectedCategory ? "bg-primary" : "bg-surface"} border border-border py-2 px-4 rounded-xl`}
                 onPress={() => setSelectedCategory(item)}
               >
                 <Text
-                  className={`font-semibold ${item == selectedCategory ? "text-content-white" : "text-content-main"} `}
+                  className={`font-semibold ${item === selectedCategory ? "text-content-white" : "text-content-main"}`}
                 >
                   {item}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        <View className="mt-2">
-          <TransactionsList
-            selectedCategory={selectedCategory}
-            searchTransactions={searchTransactions.toLowerCase()}
+            )}
           />
         </View>
+        <FlatList
+          data={listData}
+          keyExtractor={(item, index) =>
+            item.type === "header" ? `header-${item.title}` : `item-${index}`
+          }
+          renderItem={renderRow}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
       </View>
     </SafeAreaView>
   );

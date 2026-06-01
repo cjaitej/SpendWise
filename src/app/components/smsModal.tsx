@@ -1,5 +1,6 @@
 import bankInfoJson from "@/assets/bank_info/bank_headers.json";
 import { useAuth } from "@/context/AuthContext";
+import { useTransaction } from "@/context/FinanceContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -52,7 +53,6 @@ export default function Index({ onClose }: Props) {
     parsed: ParsedTransaction;
   };
 
-  const [messages, setMessages] = useState<ParsedSMS[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalMessages, setTotalMessages] = useState(0);
   const [processedMessages, setProcessedMessages] = useState(0);
@@ -60,7 +60,8 @@ export default function Index({ onClose }: Props) {
     "reading",
   );
 
-  const { createTransactions } = useAuth();
+  const { user } = useAuth();
+  const { createTransactions } = useTransaction();
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
@@ -338,13 +339,13 @@ export default function Index({ onClose }: Props) {
             }
 
             setPhase("done");
-            setMessages(parsedTransactions);
 
             const transactions = parsedTransactions
               .filter(
                 ({ parsed }) => parsed.amount !== null && parsed.type !== null,
               )
               .map(({ sms, parsed }) => ({
+                user_id: user?.id,
                 amount: parsed.amount!,
                 transaction_type: parsed.type!,
                 category: parsed.category,

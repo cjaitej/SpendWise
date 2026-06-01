@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
+import { useTransaction } from "@/context/FinanceContext";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
@@ -14,18 +15,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function OnBoardPage4Screen() {
+export default function OnBoardPage3Screen() {
   const router = useRouter();
-  const { user, createBudget, updateUser } = useAuth();
+  const { user } = useAuth();
+  const { createBudget } = useTransaction();
 
   const [budget, setBudget] = useState(10000);
 
   const [allocations, setAllocations] = useState([
-    { id: "food", name: "Food", icon: "fast-food", percentage: 25 },
-    { id: "travel", name: "Travel", icon: "car", percentage: 25 },
-    { id: "shopping", name: "Shopping", icon: "bag", percentage: 25 },
-    { id: "education", name: "Education", icon: "school", percentage: 15 },
-    { id: "others", name: "Others", icon: "apps", percentage: 10 },
+    { id: "food", name: "Food", icon: "fast-food", percentage: 20 },
+    { id: "travel", name: "Travel", icon: "car", percentage: 20 },
+    { id: "shopping", name: "Shopping", icon: "bag", percentage: 20 },
+    { id: "education", name: "Education", icon: "school", percentage: 20 },
+    { id: "others", name: "Others", icon: "apps", percentage: 20 },
   ]);
 
   const updatePercentage = (id: string, newValue: number) => {
@@ -186,7 +188,7 @@ export default function OnBoardPage4Screen() {
                       minimumTrackTintColor="#00a878"
                       maximumTrackTintColor="#e4e9f0"
                       thumbTintColor="#00875f"
-                      onSlidingComplete={(value) =>
+                      onValueChange={(value) =>
                         updatePercentage(item.id, value)
                       }
                     />
