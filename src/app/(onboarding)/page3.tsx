@@ -111,10 +111,10 @@ export default function OnBoardPage4Screen() {
         >
           {/* Progress */}
           <View className="flex-row gap-2 mt-4">
-            <View className="border-4 w-10 rounded-2xl border-border" />
-            <View className="border-4 w-10 rounded-2xl border-border" />
-            <View className="border-4 w-10 rounded-2xl border-border" />
+            <View className="border-4 w-12 rounded-2xl border-gray-300"></View>
+            <View className="border-4 w-12 rounded-2xl border-gray-300"></View>
             <View className="border-4 w-10 rounded-2xl border-primary-dark" />
+            <View className="border-4 w-12 rounded-2xl border-gray-300"></View>
           </View>
 
           {/* Header */}
