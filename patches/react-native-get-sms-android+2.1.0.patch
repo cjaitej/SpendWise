@@ -1,0 +1,90 @@
+diff --git a/node_modules/react-native-get-sms-android/android/.classpath b/node_modules/react-native-get-sms-android/android/.classpath
+new file mode 100644
+index 0000000..bbe97e5
+--- /dev/null
++++ b/node_modules/react-native-get-sms-android/android/.classpath
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<classpath>
++	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17/"/>
++	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
++	<classpathentry kind="output" path="bin/default"/>
++</classpath>
+diff --git a/node_modules/react-native-get-sms-android/android/.project b/node_modules/react-native-get-sms-android/android/.project
+new file mode 100644
+index 0000000..9211c6f
+--- /dev/null
++++ b/node_modules/react-native-get-sms-android/android/.project
+@@ -0,0 +1,23 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<projectDescription>
++	<name>react-native-get-sms-android</name>
++	<comment>Project react-native-get-sms-android created by Buildship.</comment>
++	<projects>
++	</projects>
++	<buildSpec>
++		<buildCommand>
++			<name>org.eclipse.jdt.core.javabuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++		<buildCommand>
++			<name>org.eclipse.buildship.core.gradleprojectbuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++	</buildSpec>
++	<natures>
++		<nature>org.eclipse.jdt.core.javanature</nature>
++		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
++	</natures>
++</projectDescription>
+diff --git a/node_modules/react-native-get-sms-android/android/.settings/org.eclipse.buildship.core.prefs b/node_modules/react-native-get-sms-android/android/.settings/org.eclipse.buildship.core.prefs
+new file mode 100644
+index 0000000..1675490
+--- /dev/null
++++ b/node_modules/react-native-get-sms-android/android/.settings/org.eclipse.buildship.core.prefs
+@@ -0,0 +1,2 @@
++connection.project.dir=../../../android
++eclipse.preferences.version=1
+diff --git a/node_modules/react-native-get-sms-android/android/build.gradle b/node_modules/react-native-get-sms-android/android/build.gradle
+index 0de40fc..10730cd 100644
+--- a/node_modules/react-native-get-sms-android/android/build.gradle
++++ b/node_modules/react-native-get-sms-android/android/build.gradle
+@@ -1,8 +1,7 @@
+-
+ buildscript {
+     repositories {
+         google()
+-        jcenter()
++        mavenCentral()
+     }
+ 
+     dependencies {
+@@ -25,6 +24,7 @@ android {
+         versionCode 1
+         versionName "1.0.0"
+     }
++
+     lintOptions {
+         abortOnError false
+     }
+@@ -32,14 +32,14 @@ android {
+ 
+ repositories {
+     google()
++
+     maven {
+-        // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+         url "$rootDir/../node_modules/react-native/android"
+     }
+-    jcenter()
++
++    mavenCentral()
+ }
+ 
+ dependencies {
+     compileOnly "com.facebook.react:react-native:${safeExtGet('reactNativeVersion', '+')}"
+ }
+\ No newline at end of file
+-  
