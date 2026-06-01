@@ -7,7 +7,7 @@ import RecentTransactions from "../components/recentTransaction";
 
 export default function Home() {
   return (
-    <SafeAreaView className="flex" edges={["top"]}>
+    <SafeAreaView edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="flex gap-5 px-5">
           <Header />

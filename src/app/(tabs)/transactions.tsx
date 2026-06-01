@@ -1,6 +1,6 @@
 import { Transaction, useTransaction } from "@/context/FinanceContext";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   FlatList,
   Text,
@@ -11,11 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionCard from "../components/transactionCard";
 
-function toLocalKey(d: Date) {
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
-
-function itemDateKey(dateStr: string) {
+function itemDateKey(dateStr: string | Date) {
   const d = new Date(dateStr);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
@@ -29,17 +25,25 @@ function buildListData(
   selectedCategory: string,
   searchTransactions: string,
 ): ListRow[] {
+  // 1. Sort newest first to ensure correct grouping order
+  const sortedTransactions = [...transactions].sort(
+    (a, b) =>
+      new Date(b.transaction_date).getTime() -
+      new Date(a.transaction_date).getTime(),
+  );
+
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
-  const todayKey = toLocalKey(today);
-  const yesterdayKey = toLocalKey(yesterday);
+  const todayKey = itemDateKey(today);
+  const yesterdayKey = itemDateKey(yesterday);
 
   let filtered =
     selectedCategory === "All"
-      ? transactions
-      : transactions.filter(
-          (item) => item.category === selectedCategory.toLowerCase(),
+      ? sortedTransactions
+      : sortedTransactions.filter(
+          (item) =>
+            item.category?.toLowerCase() === selectedCategory.toLowerCase(),
         );
 
   if (searchTransactions.trim() !== "") {
@@ -61,50 +65,43 @@ function buildListData(
     return key !== todayKey && key !== yesterdayKey;
   });
 
-  const groupedByMonth = olderItems.reduce(
-    (acc, transaction) => {
-      const month = new Date(transaction.transaction_date).toLocaleString(
-        "en-IN",
-        { month: "long", year: "numeric" },
-      );
-      if (!acc[month]) acc[month] = [];
-      acc[month].push(transaction);
-      return acc;
-    },
-    {} as Record<string, Transaction[]>,
-  );
+  // 2. Use Map to guarantee insertion (chronological) order
+  const groupedByMonth = olderItems.reduce((acc, transaction) => {
+    const month = new Date(transaction.transaction_date).toLocaleString(
+      "en-IN",
+      {
+        month: "long",
+        year: "numeric",
+      },
+    );
+    if (!acc.has(month)) acc.set(month, []);
+    acc.get(month)!.push(transaction);
+    return acc;
+  }, new Map<string, Transaction[]>());
 
   const rows: ListRow[] = [];
 
   if (todayItems.length > 0) {
-    const label =
-      "Today - " +
-      today.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    rows.push({ type: "header", title: label });
+    rows.push({
+      type: "header",
+      title: `Today - ${today.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`,
+    });
     todayItems.forEach((t) =>
       rows.push({ type: "item", transaction: t, special: true }),
     );
   }
 
   if (yesterdayItems.length > 0) {
-    const label =
-      "Yesterday - " +
-      yesterday.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    rows.push({ type: "header", title: label });
+    rows.push({
+      type: "header",
+      title: `Yesterday - ${yesterday.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`,
+    });
     yesterdayItems.forEach((t) =>
       rows.push({ type: "item", transaction: t, special: true }),
     );
   }
 
-  Object.entries(groupedByMonth).forEach(([month, items]) => {
+  groupedByMonth.forEach((items, month) => {
     rows.push({ type: "header", title: month });
     items.forEach((t) =>
       rows.push({ type: "item", transaction: t, special: false }),
@@ -122,17 +119,22 @@ export default function Transactions() {
     "Shopping",
     "Travel",
     "Education",
-    "finance",
+    "Finance",
     "Others",
   ];
 
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchTransactions, setSearchTransactions] = useState<string>("");
 
-  const listData = buildListData(
-    transactions,
-    selectedCategory,
-    searchTransactions.toLowerCase(),
+  // 3. Memoize the list generation to prevent lag when typing
+  const listData = useMemo(
+    () =>
+      buildListData(
+        transactions,
+        selectedCategory,
+        searchTransactions.toLowerCase(),
+      ),
+    [transactions, selectedCategory, searchTransactions],
   );
 
   function renderRow({ item }: { item: ListRow }) {
@@ -183,7 +185,7 @@ export default function Transactions() {
               placeholderTextColor="#9aaab8"
               className="flex-1 text-content-main text-xl"
               value={searchTransactions}
-              onChangeText={(text) => setSearchTransactions(text)}
+              onChangeText={setSearchTransactions}
             />
           </View>
           <FlatList
@@ -213,8 +215,11 @@ export default function Transactions() {
         </View>
         <FlatList
           data={listData}
+          // 4. Fallback to index ONLY for headers. Items use unique identifiers.
           keyExtractor={(item, index) =>
-            item.type === "header" ? `header-${item.title}` : `item-${index}`
+            item.type === "header"
+              ? `header-${item.title}`
+              : `item-${item.transaction.id ?? index}`
           }
           renderItem={renderRow}
           showsVerticalScrollIndicator={false}
