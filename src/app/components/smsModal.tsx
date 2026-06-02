@@ -61,7 +61,12 @@ export default function Index({ onClose }: Props) {
   );
 
   const { user } = useAuth();
-  const { createTransactions, getLatestSMSTransaction } = useTransaction();
+  const {
+    createTransactions,
+    getLatestSMSTransaction,
+    loadTransactions,
+    loadBudget,
+  } = useTransaction();
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
@@ -102,6 +107,9 @@ export default function Index({ onClose }: Props) {
     }).start();
   }, [processedMessages, totalMessages]);
 
+  const handleRefresh = async (): Promise<void> => {
+    await Promise.all([loadTransactions(), loadBudget()]);
+  };
   async function requestSMSPermission(): Promise<boolean> {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.READ_SMS,
@@ -249,14 +257,6 @@ export default function Index({ onClose }: Props) {
 
       if (!granted) return;
       const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
-
-      // const savedTime = await AsyncStorage.getItem(LAST_SYNCED_TIME_KEY);
-
-      // const savedSmsId = await AsyncStorage.getItem(LAST_SYNCED_SMS_ID_KEY);
-
-      // const lastSyncedTime = savedTime ? Number(savedTime) : sixtyDaysAgo;
-      // const lastProcessedSmsId = savedSmsId ? Number(savedSmsId) : null;
-
       const savedTime = await AsyncStorage.getItem(LAST_SYNCED_TIME_KEY);
       const savedSmsId = await AsyncStorage.getItem(LAST_SYNCED_SMS_ID_KEY);
 
@@ -502,7 +502,10 @@ export default function Index({ onClose }: Props) {
 
           {phase === "done" && (
             <TouchableOpacity
-              onPress={onClose}
+              onPress={async () => {
+                onClose?.();
+                await handleRefresh(); // Triggers your data reload logic
+              }}
               className="bg-primary rounded-xl py-3 px-4 self-center"
             >
               <Text className="text-content-white text-sm font-semibold">

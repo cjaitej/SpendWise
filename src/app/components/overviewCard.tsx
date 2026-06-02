@@ -187,7 +187,7 @@ export default function OverviewCard() {
 
           <View className="w-px h-6 bg-content-white/10 rounded-full" />
 
-          {/* NEW: Centered Spent Today Column */}
+          {/* Centered Spent Today Column */}
           <View className="flex-1 items-center px-1">
             <Text
               className="text-content-white/70 font-semibold text-[10px] uppercase tracking-widest mb-1.5"

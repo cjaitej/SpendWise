@@ -56,7 +56,7 @@ export default function RecentTransactions() {
         </TouchableOpacity>
       </View>
 
-      <View className="flex-1 gap-4">
+      <View className="flex-1 gap-1">
         {todayTransaction.length < 1 ? (
           <Text className="text-sm mt-10 text-center">
             No Recent Transaction
