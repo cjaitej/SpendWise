@@ -61,7 +61,7 @@ export default function Index({ onClose }: Props) {
   );
 
   const { user } = useAuth();
-  const { createTransactions } = useTransaction();
+  const { createTransactions, getLatestSMSTransaction } = useTransaction();
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
@@ -248,15 +248,32 @@ export default function Index({ onClose }: Props) {
       const granted = await requestSMSPermission();
 
       if (!granted) return;
+      const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+
+      // const savedTime = await AsyncStorage.getItem(LAST_SYNCED_TIME_KEY);
+
+      // const savedSmsId = await AsyncStorage.getItem(LAST_SYNCED_SMS_ID_KEY);
+
+      // const lastSyncedTime = savedTime ? Number(savedTime) : sixtyDaysAgo;
+      // const lastProcessedSmsId = savedSmsId ? Number(savedSmsId) : null;
 
       const savedTime = await AsyncStorage.getItem(LAST_SYNCED_TIME_KEY);
-
       const savedSmsId = await AsyncStorage.getItem(LAST_SYNCED_SMS_ID_KEY);
 
-      const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
+      // Fetch both the date and the SMS ID from the DB if local storage is empty
+      const latestTransaction = !savedTime
+        ? await getLatestSMSTransaction()
+        : null;
 
-      const lastSyncedTime = savedTime ? Number(savedTime) : sixtyDaysAgo;
-      const lastProcessedSmsId = savedSmsId ? Number(savedSmsId) : null;
+      const lastSyncedTime = savedTime
+        ? Number(savedTime)
+        : latestTransaction?.transaction_date
+          ? new Date(latestTransaction.transaction_date).getTime()
+          : oneYearAgo;
+
+      const lastProcessedSmsId = savedSmsId
+        ? Number(savedSmsId)
+        : latestTransaction?.source_sms_id || null;
 
       SmsAndroid.list(
         JSON.stringify({
@@ -353,6 +370,7 @@ export default function Index({ onClose }: Props) {
                 transaction_date: new Date(sms.date).toISOString(),
                 source: "sms" as const,
                 is_auto_detected: true,
+                source_sms_id: sms._id,
               }));
 
             if (transactions.length > 0) {

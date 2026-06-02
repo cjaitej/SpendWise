@@ -29,6 +29,7 @@ export interface Transaction {
   transaction_date: string;
   source: "sms" | "manual";
   is_auto_detected: boolean;
+  source_sms_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +41,10 @@ interface TransactionContextType {
   loadBudget: () => Promise<void>;
   createBudget: (budgetData: Partial<Budget>) => Promise<void>;
   createTransactions: (transactions: Partial<Transaction>[]) => Promise<void>;
+  getLatestSMSTransaction: () => Promise<Pick<
+    Transaction,
+    "transaction_date" | "source_sms_id"
+  > | null>;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(
@@ -119,7 +124,24 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
     if (error) throw error;
   };
 
-  //Returning timing of
+  //Returning Latest Transaction
+  const getLatestSMSTransaction = async () => {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("transaction_date, source_sms_id")
+      .eq("source", "sms")
+      .order("transaction_date", { ascending: false })
+      .order("source_sms_id", { ascending: false }) // <-- Add secondary sort here
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return {
+      transaction_date: data?.transaction_date ?? null,
+      source_sms_id: data?.source_sms_id ?? null,
+    };
+  };
   return (
     <TransactionContext.Provider
       value={{
@@ -129,6 +151,7 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
         loadBudget,
         createBudget,
         createTransactions,
+        getLatestSMSTransaction,
       }}
     >
       {children}
