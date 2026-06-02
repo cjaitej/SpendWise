@@ -58,9 +58,10 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
 
   const now = new Date();
-  // First day of previous month
-  const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  // First day of next month
+  // First day of the month, 5 months ago (Current Month + 5 Previous Months = 6 Months total)
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  // First day of next month (Ensures the entirety of the current month is included)
   const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   //Loading Transaction Data when app is opened.

@@ -1,17 +1,8 @@
 import { useTransaction } from "@/context/FinanceContext";
+import { compactCurrency, currency } from "@/utils/currency_converter";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, Text, TouchableOpacity, View } from "react-native";
-
-const currency = new Intl.NumberFormat("en-IN", {
-  maximumFractionDigits: 1,
-});
-
-const compactCurrency = new Intl.NumberFormat("en-IN", {
-  maximumFractionDigits: 2,
-  notation: "compact",
-  compactDisplay: "short",
-});
 
 export default function OverviewCard() {
   const { transactions, budgets } = useTransaction();
