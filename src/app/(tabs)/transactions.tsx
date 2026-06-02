@@ -171,7 +171,7 @@ export default function Transactions() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <View className="flex-1 gap-4 px-5 pt-5">
+      <View className="flex-1 gap-4 px-5">
         <View className="flex">
           <Text className="text-xl font-semibold">Transactions</Text>
         </View>

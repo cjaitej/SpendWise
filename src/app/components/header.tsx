@@ -8,7 +8,7 @@ export default function Header() {
   const displayName = user?.name || "Amigo";
 
   return (
-    <View className="flex-row items-center justify-between pt-3">
+    <View className="flex-row items-center justify-between">
       <Text className="text-content-main text-2xl">
         Hola, <Text className="font-extrabold">{displayName}</Text> 👋
       </Text>

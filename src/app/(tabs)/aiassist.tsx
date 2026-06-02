@@ -177,7 +177,7 @@ export default function Aiassist() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View className="flex-1 gap-1 px-5 pt-5">
+        <View className="flex-1 gap-1 px-5">
           <View className="flex-row justify-between items-center">
             <View className="flex-row gap-2 items-center">
               <Ionicons name="sparkles" size={18} color="#7c3aed" />

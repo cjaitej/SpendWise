@@ -85,6 +85,18 @@ export default function OverviewCard() {
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
   }, [currentMonthTransactions]);
 
+  // NEW: Calculate Today's Spent
+  const spentToday = useMemo(() => {
+    const today = new Date().toDateString();
+    return currentMonthTransactions
+      .filter(
+        (t) =>
+          new Date(t.transaction_date).toDateString() === today &&
+          t.transaction_type === "debit",
+      )
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  }, [currentMonthTransactions]);
+
   const lastMonthSpent = useMemo(() => {
     return lastMonthTransactions
       .filter((t) => t.transaction_type === "debit")
@@ -151,24 +163,47 @@ export default function OverviewCard() {
           </View>
         </View>
 
-        <View className="flex-row items-center justify-between w-full mb-5 mt-1">
-          {/* Centered Spent Column */}
+        <View className="flex-row items-center justify-between w-full mb-5 mt-1 ">
+          {/* Centered Total Spent Column */}
           <View className="flex-1 items-center px-1">
             <Text
               className="text-content-white/70 font-semibold text-[10px] uppercase tracking-widest mb-1.5"
               numberOfLines={1}
             >
-              Spent
+              Total
             </Text>
             <View className="flex-row items-baseline w-full justify-center">
               <Text className="text-xs text-content-white/70 font-bold mr-0.5">
                 ₹
               </Text>
               <Text
-                className="text-content-white font-black text-2xl tracking-tighter shrink"
+                className="text-content-white font-black text-xl tracking-tighter shrink"
                 numberOfLines={1}
               >
                 {compactCurrency.format(totalSpent)}
+              </Text>
+            </View>
+          </View>
+
+          <View className="w-px h-6 bg-content-white/10 rounded-full" />
+
+          {/* NEW: Centered Spent Today Column */}
+          <View className="flex-1 items-center px-1">
+            <Text
+              className="text-content-white/70 font-semibold text-[10px] uppercase tracking-widest mb-1.5"
+              numberOfLines={1}
+            >
+              Today
+            </Text>
+            <View className="flex-row items-baseline w-full justify-center">
+              <Text className="text-xs text-content-white/70 font-bold mr-0.5">
+                ₹
+              </Text>
+              <Text
+                className="text-content-white font-black text-xl tracking-tighter shrink"
+                numberOfLines={1}
+              >
+                {compactCurrency.format(spentToday)}
               </Text>
             </View>
           </View>
@@ -188,7 +223,7 @@ export default function OverviewCard() {
                 ₹
               </Text>
               <Text
-                className="text-content-white font-black text-2xl tracking-tighter shrink"
+                className="text-content-white font-black text-xl tracking-tighter shrink"
                 numberOfLines={1}
               >
                 {compactCurrency.format(dailyAverageSpent)}
@@ -204,7 +239,7 @@ export default function OverviewCard() {
               className="text-content-white/70 font-semibold text-[10px] uppercase tracking-widest mb-1.5"
               numberOfLines={1}
             >
-              Trend
+              MoM%
             </Text>
             <View className="flex-row items-center justify-center gap-1 bg-content-main/20 border border-content-white/5 px-2 py-1 rounded-md w-auto">
               <Ionicons
@@ -225,7 +260,7 @@ export default function OverviewCard() {
                 }
               />
               <Text
-                className="text-content-white font-bold text-base tracking-tight shrink"
+                className="text-content-white font-bold text-sm tracking-tight shrink"
                 numberOfLines={1}
               >
                 {percentageChange === null
