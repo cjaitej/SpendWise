@@ -1,4 +1,5 @@
-import { transactions } from "@/constants/transactions";
+import { useTransaction } from "@/context/FinanceContext";
+import { getFinanceAIResponse } from "@/libs/gemini/geminiService"; // Adjust this path to your helper file
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -33,13 +34,11 @@ function Dot({ delay }: { delay: number }) {
     Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
-
         Animated.timing(translateY, {
           toValue: -6,
           duration: 250,
           useNativeDriver: true,
         }),
-
         Animated.timing(translateY, {
           toValue: 0,
           duration: 250,
@@ -51,9 +50,7 @@ function Dot({ delay }: { delay: number }) {
 
   return (
     <Animated.View
-      style={{
-        transform: [{ translateY }],
-      }}
+      style={{ transform: [{ translateY }] }}
       className="w-2 h-2 rounded-full bg-white"
     />
   );
@@ -111,6 +108,8 @@ export default function Aiassist() {
   const [chat, setChat] = useState<Message[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const { transactions } = useTransaction();
+
   const handleSend = async (customMessage?: string) => {
     const finalMessage = customMessage || message;
 
@@ -123,52 +122,39 @@ export default function Aiassist() {
       message: finalMessage,
     };
 
-    // instantly show user message
     setChat((prev) => [...prev, userMessage]);
-
     setMessage("");
     setAIMessageLoading(true);
+
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/chat`, {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          message: finalMessage,
-          history: chat,
-          transactions: transactions,
-        }),
+      // Calling your exported helper function directly
+      const responseText = await getFinanceAIResponse({
+        message: finalMessage,
+        transactions: transactions,
+        history: chat,
       });
-
-      const data = await response.json();
 
       const aiMessage: Message = {
         user: "AI",
-        message: formatAIMessage(data.message),
+        message: formatAIMessage(responseText),
       };
 
       setChat((prev) => [...prev, aiMessage]);
     } catch (err) {
       console.log(err);
-
       const errorMessage: Message = {
         user: "AI",
-        message: "Something went wrong.",
+        message: "Something went wrong connecting with Gemini.",
       };
-
       setChat((prev) => [...prev, errorMessage]);
     }
+
     setAIMessageLoading(false);
     setDisableSend(false);
   };
 
   useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({
-      animated: true,
-    });
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [chat, aiMessageLoading]);
 
   return (
@@ -213,7 +199,6 @@ export default function Aiassist() {
                       onPress={() => handleSend(item)}
                     >
                       <Text className="text-base font-normal">{item}</Text>
-
                       <Ionicons
                         name="chevron-forward"
                         size={20}
@@ -227,7 +212,6 @@ export default function Aiassist() {
             {aiMessageLoading ? <ChatLoading /> : null}
           </ScrollView>
 
-          {/* Updated Input Container */}
           <View className="pb-5 items-center gap-1 bg-card">
             <View className="flex-row justify-between items-center pl-4 pr-2 py-1 border border-border rounded-full bg-surface shadow-sm w-full">
               <TextInput
