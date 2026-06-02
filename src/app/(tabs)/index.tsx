@@ -19,7 +19,7 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         onRefreshAction={handleRefresh}
       >
-        <View className="flex gap-5 px-5">
+        <View className="flex gap-5 px-5 pt-3">
           <Header />
           <OverviewCard />
           <QuickActions />

@@ -187,7 +187,7 @@ export default function Transactions() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListHeaderComponent={
-          <View className="gap-4 mb-4 mt-2">
+          <View className="gap-4 mb-4 pt-3">
             <View className="flex">
               <Text className="text-xl font-semibold">Transactions</Text>
             </View>

@@ -177,7 +177,7 @@ export default function Aiassist() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View className="flex-1 gap-1 px-5">
+        <View className="flex-1 gap-1 px-5 pt-3">
           <View className="flex-row justify-between items-center">
             <View className="flex-row gap-2 items-center">
               <Ionicons name="sparkles" size={18} color="#7c3aed" />
@@ -231,7 +231,7 @@ export default function Aiassist() {
           <View className="pb-5 items-center gap-1 bg-card">
             <View className="flex-row justify-between items-center pl-4 pr-2 py-1 border border-border rounded-full bg-surface shadow-sm w-full">
               <TextInput
-                placeholder="Ask anything..."
+                placeholder="Ask questions regarding your finance..."
                 placeholderTextColor="#9aaab8"
                 className="flex-1 text-content-main text-base"
                 value={message}
