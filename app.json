@@ -15,7 +15,9 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "permissions": ["READ_SMS"],
+      "permissions": [
+        "READ_SMS"
+      ],
       "predictiveBackGestureEnabled": false,
       "package": "com.strange_me.SpendWise"
     },
@@ -35,7 +37,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
