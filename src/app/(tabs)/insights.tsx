@@ -26,8 +26,6 @@ const CATEGORY_HEX: Record<string, string> = {
   others: "#F59E0B",
 };
 
-// (donut geometry computed inline in compact breakdown)
-
 // ─── Insight Types ────────────────────────────────────────────────────────────
 type TrendDirection = "up" | "down" | "neutral";
 
@@ -37,14 +35,12 @@ interface Insight {
   accentColor: string;
   title: string;
   subtitle: string;
-  // Optional enrichment fields
-  trendDirection?: TrendDirection; // drives arrow + badge color
-  trendLabel?: string; // e.g. "+24%" or "−₹420"
-  barPercent?: number; // 0-100, drives mini progress bar
+  trendDirection?: TrendDirection;
+  trendLabel?: string;
+  barPercent?: number;
   barColor?: string;
 }
 
-// Trend badge: green = improvement (spending down / saving up), red = warning
 function TrendBadge({
   direction,
   label,
@@ -52,7 +48,7 @@ function TrendBadge({
   direction: TrendDirection;
   label: string;
 }) {
-  const isPositive = direction === "down"; // spending went down = good
+  const isPositive = direction === "down";
   const isNeutral = direction === "neutral";
   const bg = isNeutral ? "#F1F5F9" : isPositive ? "#D1FAE5" : "#FFE4E6";
   const fg = isNeutral ? "#64748B" : isPositive ? "#059669" : "#E11D48";
@@ -79,7 +75,6 @@ function TrendBadge({
   );
 }
 
-// Mini horizontal progress bar
 function MiniBar({ percent, color }: { percent: number; color: string }) {
   const clamped = Math.min(100, Math.max(0, percent));
   return (
@@ -104,7 +99,7 @@ function MiniBar({ percent, color }: { percent: number; color: string }) {
   );
 }
 
-export default function Aiassist() {
+export default function Insights() {
   const { transactions } = useTransaction();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>(FILTERS[0]);
 
@@ -236,7 +231,7 @@ export default function Aiassist() {
       .sort((a, b) => b.amount - a.amount);
   }, [debitTransactions, totalSpent]);
 
-  // ─── IMPROVED INSIGHTS ENGINE ─────────────────────────────────────────────
+  // ─── INSIGHTS ENGINE ──────────────────────────────────────────────────────
   const calculatedInsights = useMemo((): Insight[] => {
     if (!debitTransactions || debitTransactions.length === 0) return [];
 
@@ -329,15 +324,15 @@ export default function Aiassist() {
         id: "cat_trend",
         icon: iconName,
         accentColor: catHex,
-        title: `${topCat} is your top category`,
+        title: `${topCat} is your biggest expense`,
         subtitle:
           pct !== null
-            ? `${fmt(curr)} spent · ${pct > 0 ? "up" : "down"} ${Math.abs(pct).toFixed(2)}% ${vsText}`
-            : `${fmt(curr)} spent ${periodText}`,
+            ? `You spent ${fmt(curr)} on ${topCat} — ${pct > 0 ? "up" : "down"} ${Math.abs(pct).toFixed(0)}% ${vsText}`
+            : `You spent ${fmt(curr)} on ${topCat} ${periodText}`,
         trendDirection: pct === null ? "neutral" : pct > 0 ? "up" : "down",
         trendLabel:
           pct !== null
-            ? `${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%`
+            ? `${pct > 0 ? "+" : "−"}${Math.abs(pct).toFixed(0)}%`
             : fmt(curr),
         barPercent: totalSpent > 0 ? (curr / totalSpent) * 100 : 0,
         barColor: catHex,
@@ -358,17 +353,17 @@ export default function Aiassist() {
       const rateDelta =
         prevSavingsRate !== null ? savingsRate - prevSavingsRate : null;
 
+      const savingsAmt = totalEarned - totalSpent;
+
       insights.push({
         id: "savings_rate",
         icon: "shield-checkmark-outline",
         accentColor: "#10B981",
-        title: `${Math.max(0, savingsRate)}% savings rate`,
+        title: `You saved ${Math.max(0, savingsRate)}% of your income`,
         subtitle:
-          savingsRate >= 20
-            ? "Great discipline!"
-            : savingsRate >= 10
-              ? "Room to improve"
-              : "Try to save more",
+          savingsAmt > 0
+            ? `${fmt(savingsAmt)} saved out of ${fmt(totalEarned)} earned${savingsRate >= 20 ? " — great job!" : savingsRate >= 10 ? " — try to reach 20%" : " — aim to save more"}`
+            : `You spent more than you earned by ${fmt(Math.abs(savingsAmt))}`,
         trendDirection:
           rateDelta === null ? "neutral" : rateDelta >= 0 ? "down" : "up",
         trendLabel:
@@ -377,8 +372,8 @@ export default function Aiassist() {
             : rateDelta === 0
               ? "Same as before"
               : rateDelta > 0
-                ? "Better than before"
-                : "Worse than before",
+                ? `+${rateDelta}pp vs before`
+                : `${rateDelta}pp vs before`,
         barPercent: Math.max(0, Math.min(100, savingsRate)),
         barColor:
           savingsRate >= 20
@@ -404,13 +399,16 @@ export default function Aiassist() {
         id: "avg_txn",
         icon: "receipt-outline",
         accentColor: "#7367F0",
-        title: `Avg spend ${fmt(Math.round(avgTxn))}`,
-        subtitle: `Across ${debitTransactions.length} transactions`,
+        title: `Avg spend per transaction: ${fmt(Math.round(avgTxn))}`,
+        subtitle:
+          avgPct !== null
+            ? `Based on ${debitTransactions.length} transactions — ${avgPct > 0 ? "higher" : "lower"} than before`
+            : `Based on ${debitTransactions.length} transactions ${periodText}`,
         trendDirection:
           avgPct === null ? "neutral" : avgPct > 0 ? "up" : "down",
         trendLabel:
           avgPct !== null
-            ? `${Math.abs(avgPct).toFixed(2)}%`
+            ? `${avgPct > 0 ? "+" : "−"}${Math.abs(avgPct).toFixed(0)}%`
             : `${debitTransactions.length} txns`,
         barPercent:
           prevAvgTxn > 0
@@ -439,14 +437,16 @@ export default function Aiassist() {
         day: "numeric",
         month: "short",
       });
+      const topDayShare =
+        totalSpent > 0 ? Math.round((topDayAmt / totalSpent) * 100) : 0;
 
       insights.push({
         id: "top_day",
         icon: "flame-outline",
         accentColor: "#F43F5E",
-        title: `Peak day: ${fmt(Math.round(topDayAmt))}`,
-        subtitle: `Highest single-day spend on ${topDayDate}`,
-        barPercent: totalSpent > 0 ? (topDayAmt / totalSpent) * 100 : 0,
+        title: `Your biggest day: ${fmt(Math.round(topDayAmt))}`,
+        subtitle: `On ${topDayDate} you spent ${topDayShare}% of your total — the highest single day`,
+        barPercent: topDayShare,
         barColor: "#F43F5E",
       });
     }
@@ -470,8 +470,12 @@ export default function Aiassist() {
         id: "weekend_vs_weekday",
         icon: isWeekendHeavy ? "partly-sunny-outline" : "briefcase-outline",
         accentColor: "#00CFE8",
-        title: isWeekendHeavy ? `Weekend spender` : `Weekday spender`,
-        subtitle: `${weekendPct}% on weekends, ${100 - weekendPct}% on weekdays`,
+        title: isWeekendHeavy
+          ? `Most spending happens on weekends`
+          : `Most spending happens on weekdays`,
+        subtitle: isWeekendHeavy
+          ? `${weekendPct}% of your money goes on Sat/Sun vs ${100 - weekendPct}% on Mon–Fri`
+          : `${100 - weekendPct}% of your money goes on Mon–Fri vs ${weekendPct}% on weekends`,
         barPercent: weekendPct,
         barColor: "#00CFE8",
       });
@@ -499,10 +503,13 @@ export default function Aiassist() {
         id: "night_spend",
         icon: "moon-outline",
         accentColor: "#A855F7",
-        title: `${lnShare}% spent after 10pm`,
-        subtitle: `${fmt(Math.round(currentLateNight))} in late-night txns`,
+        title: `${lnShare}% of spending happens after 10pm`,
+        subtitle: `You spent ${fmt(Math.round(currentLateNight))} in late-night transactions`,
         trendDirection: lnPct === null ? "neutral" : lnPct > 0 ? "up" : "down",
-        trendLabel: lnPct !== null ? `${Math.abs(lnPct).toFixed(2)}%` : vsText,
+        trendLabel:
+          lnPct !== null
+            ? `${lnPct > 0 ? "+" : "−"}${Math.abs(lnPct).toFixed(0)}% ${vsText}`
+            : vsText,
         barPercent: lnShare,
         barColor: "#A855F7",
       });
@@ -510,12 +517,10 @@ export default function Aiassist() {
 
     // ── 7. Longest No-Spend Streak ────────────────────────────────────────
     {
-      // Build a Set of all dates that had spending
       const spendDates = new Set(
         debitTransactions.map((t) => t.transaction_date.slice(0, 10)),
       );
 
-      // Determine date range for current filter
       const rangeStart = new Date(
         selectedFilter === "This Month"
           ? dates.currentMonthStart
@@ -547,13 +552,13 @@ export default function Aiassist() {
           id: "no_spend_streak",
           icon: "trophy-outline",
           accentColor: "#F59E0B",
-          title: `${maxStreak}-day no-spend streak`,
+          title: `${maxStreak} days in a row without spending`,
           subtitle:
             maxStreak >= 7
-              ? "Incredible self-control!"
+              ? "Incredible self-control — keep it up!"
               : maxStreak >= 4
-                ? "Great restraint!"
-                : "Keep building that streak",
+                ? "Great restraint — try to beat it!"
+                : "Good start — can you go longer?",
           barPercent: Math.min(100, (maxStreak / 14) * 100),
           barColor: "#F59E0B",
         });
@@ -566,7 +571,6 @@ export default function Aiassist() {
         debitTransactions.map((t) => t.transaction_date.slice(0, 10)),
       );
 
-      // Walk backwards from today / last day of period
       const streakEnd =
         selectedFilter === "Last Month"
           ? new Date(dates.lastMonthFullEnd)
@@ -591,11 +595,13 @@ export default function Aiassist() {
           id: "spend_streak",
           icon: "flash-outline",
           accentColor: "#EF4444",
-          title: `${streak}-day spending streak`,
+          title: `Spending every day for ${streak} days straight`,
           subtitle:
             streak >= 7
-              ? "Watch out — spending every day!"
-              : "You've spent on consecutive days",
+              ? "You haven't had a no-spend day in over a week — time for a break?"
+              : "You've made a purchase on each of the last " +
+                streak +
+                " days",
           trendDirection: "up",
           trendLabel: `${streak} days`,
           barPercent: Math.min(100, (streak / 14) * 100),
@@ -617,19 +623,16 @@ export default function Aiassist() {
         "Saturdays",
       ];
 
-      // Count how many distinct weeks had a spend on each day-of-week
       const weekDayHitMap: Record<number, Set<string>> = {};
       for (let i = 0; i < 7; i++) weekDayHitMap[i] = new Set();
 
       debitTransactions.forEach((t) => {
         const d = new Date(t.transaction_date);
         const dow = d.getDay();
-        // Use ISO week string as key to identify unique weeks
         const weekKey = `${d.getFullYear()}-W${Math.ceil((d.getDate() - d.getDay() + 10) / 7)}`;
         weekDayHitMap[dow].add(weekKey);
       });
 
-      // Total weeks in the period
       const periodDays = Math.ceil(
         (dates.now.getTime() -
           (selectedFilter === "This Month"
@@ -654,8 +657,8 @@ export default function Aiassist() {
           id: "consistent_day",
           icon: "repeat-outline",
           accentColor: "#06B6D4",
-          title: `${FULL_DAY_NAMES[consistentDay.day]} are your habit`,
-          subtitle: `You spend on ${DAY_NAMES[consistentDay.day]} ${consistencyPct}% of weeks`,
+          title: `You almost always spend on ${FULL_DAY_NAMES[consistentDay.day]}`,
+          subtitle: `${consistentDay.hits} out of ${totalWeeks} weeks had a transaction on ${DAY_NAMES[consistentDay.day]} (${consistencyPct}% of the time)`,
           barPercent: Math.min(100, consistencyPct),
           barColor: "#06B6D4",
         });
@@ -664,7 +667,6 @@ export default function Aiassist() {
 
     // ── 10. Impulse Buy Ratio ─────────────────────────────────────────────
     {
-      // Transactions under ₹200 treated as impulse/small buys
       const IMPULSE_THRESHOLD = 200;
       const impulseTxns = debitTransactions.filter(
         (t) => Number(t.amount || 0) <= IMPULSE_THRESHOLD,
@@ -693,8 +695,8 @@ export default function Aiassist() {
           id: "impulse_ratio",
           icon: "storefront-outline",
           accentColor: "#F97316",
-          title: `${impulseRatio}% small transactions`,
-          subtitle: `${impulseTxns.length} txns under ₹200 · ${fmt(Math.round(impulseTotal))} total`,
+          title: `${impulseRatio}% of transactions are under ₹200`,
+          subtitle: `${impulseTxns.length} small purchases totalling ${fmt(Math.round(impulseTotal))}`,
           trendDirection:
             impulseDelta === null
               ? "neutral"
@@ -703,7 +705,7 @@ export default function Aiassist() {
                 : "down",
           trendLabel:
             impulseDelta !== null
-              ? `${Math.abs(impulseDelta).toFixed(2)}%`
+              ? `${impulseDelta > 0 ? "+" : "−"}${Math.abs(impulseDelta).toFixed(0)}% ${vsText}`
               : `${impulseTxns.length} txns`,
           barPercent: impulseRatio,
           barColor:
@@ -716,11 +718,10 @@ export default function Aiassist() {
       }
     }
 
-    // ── 11. Morning vs Evening Spender ────────────────────────────────────
+    // ── 11. Morning vs Afternoon Spender ──────────────────────────────────
     {
       let morningSpend = 0,
         eveningSpend = 0;
-      // Morning: 6am–12pm | Afternoon: 12pm–6pm | Evening: 6pm–10pm | Night handled separately
       debitTransactions.forEach((t) => {
         const h = new Date(t.transaction_date).getHours();
         if (h >= 6 && h < 14) morningSpend += Number(t.amount || 0);
@@ -736,8 +737,12 @@ export default function Aiassist() {
           id: "time_of_day",
           icon: isMorningHeavy ? "sunny-outline" : "partly-sunny-outline",
           accentColor: isMorningHeavy ? "#FBBF24" : "#8B5CF6",
-          title: isMorningHeavy ? "Morning spender" : "Afternoon spender",
-          subtitle: `${isMorningHeavy ? morningPct : 100 - morningPct}% of spend before ${isMorningHeavy ? "2pm" : "10pm"}`,
+          title: isMorningHeavy
+            ? `You spend more in the morning`
+            : `You spend more in the afternoon`,
+          subtitle: isMorningHeavy
+            ? `${morningPct}% of your spending happens before 2pm`
+            : `${100 - morningPct}% of your spending happens after 2pm`,
           barPercent: isMorningHeavy ? morningPct : 100 - morningPct,
           barColor: isMorningHeavy ? "#FBBF24" : "#8B5CF6",
         });
@@ -746,39 +751,35 @@ export default function Aiassist() {
 
     // ── 12. Biggest Spending Week of Month ────────────────────────────────
     {
-      // Bucket transactions into week-of-month (W1–W4/W5)
-      const weekBuckets: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      const weekBuckets: Record<number, { total: number; dateRange: string }> =
+        {
+          1: { total: 0, dateRange: "1st–7th" },
+          2: { total: 0, dateRange: "8th–14th" },
+          3: { total: 0, dateRange: "15th–21st" },
+          4: { total: 0, dateRange: "22nd onward" },
+        };
 
       debitTransactions.forEach((t) => {
         const dayOfMonth = new Date(t.transaction_date).getDate();
         const weekNum = Math.min(4, Math.ceil(dayOfMonth / 7));
-        weekBuckets[weekNum] += Number(t.amount || 0);
+        weekBuckets[weekNum].total += Number(t.amount || 0);
       });
 
       const topWeek = Object.entries(weekBuckets)
-        .filter(([, v]) => v > 0)
-        .sort(([, a], [, b]) => b - a)[0];
+        .filter(([, v]) => v.total > 0)
+        .sort(([, a], [, b]) => b.total - a.total)[0];
 
       if (topWeek) {
-        const [weekNum, weekAmt] = topWeek;
-        const weekLabel =
-          weekNum === "1"
-            ? "1st week"
-            : weekNum === "2"
-              ? "2nd week"
-              : weekNum === "3"
-                ? "3rd week"
-                : "last week";
-
+        const [weekNum, weekData] = topWeek;
         const weekShare =
-          totalSpent > 0 ? Math.round((weekAmt / totalSpent) * 100) : 0;
+          totalSpent > 0 ? Math.round((weekData.total / totalSpent) * 100) : 0;
 
         insights.push({
           id: "top_week",
           icon: "calendar-number-outline",
           accentColor: "#14B8A6",
-          title: `${weekShare}% spent in ${weekLabel}`,
-          subtitle: `${fmt(Math.round(weekAmt))} — your heaviest week`,
+          title: `You spent the most in days ${weekBuckets[Number(weekNum)].dateRange}`,
+          subtitle: `${fmt(Math.round(weekData.total))} spent — that's ${weekShare}% of your total for the period`,
           barPercent: weekShare,
           barColor: "#14B8A6",
         });
@@ -1009,10 +1010,9 @@ export default function Aiassist() {
             </View>
           </View>
 
-          {/* ── IMPROVED TOP INSIGHTS ─────────────────────────────────── */}
+          {/* ── TOP INSIGHTS ──────────────────────────────────────────── */}
           {calculatedInsights.length > 0 && (
             <View className="gap-3">
-              {/* Section header with count badge */}
               <View className="flex-row items-center justify-between">
                 <Text className="text-lg font-bold text-slate-900">
                   Top Insights
@@ -1058,7 +1058,6 @@ export default function Aiassist() {
                         index !== calculatedInsights.length - 1 ? 12 : 0,
                       borderWidth: 1,
                       borderColor: "#F1F5F9",
-                      // Subtle top accent border matching the insight color
                       borderTopWidth: 3,
                       borderTopColor: insight.accentColor,
                       shadowColor: insight.accentColor,
