@@ -1,3 +1,4 @@
+import { LocalDB } from "@/libs/localDB/localDB";
 import { supabase } from "@/libs/supabase/client";
 import {
   createContext,
@@ -13,6 +14,7 @@ export interface User {
   email: string;
   username: string;
   onboardingCompleted?: boolean;
+  storage_preference: "cloud" | "device";
 }
 
 export interface Budget {
@@ -47,6 +49,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   userNameAvailability: (username: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  updateStoragePreference: (preference: "cloud" | "device") => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
 }
 
@@ -109,10 +112,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         username: data.username,
         email: authUser.data.user.email || "",
         onboardingCompleted: data.onboarding_completed,
+        storage_preference: data.storage_preference,
       };
     } catch (error) {
       console.log("Error in fetchUserProfile: ", error);
       return null;
+    }
+  };
+
+  const updateStoragePreference = async (preference: "cloud" | "device") => {
+    if (!user?.id) return;
+
+    try {
+      if (preference === "cloud" && user.storage_preference === "device") {
+        const localTransactions = await LocalDB.getTransactions(user.id);
+        const localBudgets = await LocalDB.getBudgets(user.id);
+
+        if (localTransactions.length > 0) {
+          const { error } = await supabase
+            .from("transactions")
+            .upsert(localTransactions);
+          if (error) throw error;
+        }
+
+        if (localBudgets.length > 0) {
+          const formattedBudgets = localBudgets.map((b) => ({
+            id: b.id,
+            user_id: b.user_id,
+            category: b.category ?? "overall",
+            amount: Number(b.amount),
+            period_type: b.period_type,
+            start_date: b.start_date,
+            created_at: b.created_at,
+            updated_at: b.updated_at,
+          }));
+          const { error } = await supabase
+            .from("budgets")
+            .upsert(formattedBudgets);
+          if (error) throw error;
+        }
+      }
+
+      setUser((prev) =>
+        prev ? { ...prev, storage_preference: preference } : null,
+      );
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ storage_preference: preference })
+        .eq("id", user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Failed to update preference", error);
     }
   };
 
@@ -202,6 +254,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signOut,
         userNameAvailability,
         updateUser,
+        updateStoragePreference,
       }}
     >
       {children}

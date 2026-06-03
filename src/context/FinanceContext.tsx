@@ -1,3 +1,4 @@
+import { LocalDB } from "@/libs/localDB/localDB";
 import { supabase } from "@/libs/supabase/client";
 import {
   createContext,
@@ -37,14 +38,19 @@ export interface Transaction {
 interface TransactionContextType {
   transactions: Transaction[];
   budgets: Budget[];
-  loadTransactions: () => Promise<void>;
-  loadBudget: () => Promise<void>;
-  createBudget: (budgetData: Partial<Budget>) => Promise<void>;
-  createTransactions: (transactions: Partial<Transaction>[]) => Promise<void>;
-  getLatestSMSTransaction: () => Promise<Pick<
-    Transaction,
-    "transaction_date" | "source_sms_id"
-  > | null>;
+  loadTransactions: (isCloud?: boolean) => Promise<void>;
+  loadBudget: (isCloud?: boolean) => Promise<void>;
+  createBudget: (
+    budgetData: Partial<Budget>,
+    isCloud?: boolean,
+  ) => Promise<void>;
+  createTransactions: (
+    transactions: Partial<Transaction>[],
+    isCloud?: boolean,
+  ) => Promise<void>;
+  getLatestSMSTransaction: (
+    isCloud?: boolean,
+  ) => Promise<Pick<Transaction, "transaction_date" | "source_sms_id"> | null>;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(
@@ -54,54 +60,84 @@ const TransactionContext = createContext<TransactionContextType | undefined>(
 export const TransactionProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransaction] = useState<Transaction[]>([]);
   const [budgets, setBudget] = useState<Budget[]>([]);
-
   const { user } = useAuth();
 
-  const now = new Date();
-  // First day of the month, 5 months ago (Current Month + 5 Previous Months = 6 Months total)
-  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const isCloudEnabled = user?.storage_preference !== "device";
 
-  // First day of next month (Ensures the entirety of the current month is included)
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
   const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  //Loading Transaction Data when app is opened.
   useEffect(() => {
-    if (!user?.id) return;
+    LocalDB.init();
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setTransaction([]);
+      setBudget([]);
+      return;
+    }
+
     const loadData = async () => {
-      await Promise.all([loadTransactions(), loadBudget()]);
+      await Promise.all([
+        loadTransactions(isCloudEnabled),
+        loadBudget(isCloudEnabled),
+      ]);
     };
 
     loadData();
-  }, [user?.id]);
+  }, [user?.id, isCloudEnabled]);
 
-  //RefreshTransactions:
-  const loadTransactions = async () => {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("user_id", user?.id)
-      .gte("transaction_date", startDate.toISOString())
-      .lt("transaction_date", endDate.toISOString());
+  const loadTransactions = async (isCloud = isCloudEnabled) => {
+    if (!user?.id) return; // Safety check
 
-    if (error) throw error;
-    setTransaction(data ?? []);
+    const localData = await LocalDB.getTransactions(user.id);
+    setTransaction(localData);
+
+    if (isCloud) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("transaction_date", startDate.toISOString())
+        .lt("transaction_date", endDate.toISOString());
+
+      if (error) throw error;
+      if (data) {
+        await LocalDB.syncTransactions(user.id, data);
+        setTransaction(data);
+      }
+    }
   };
 
-  //RefreshBudget:
-  const loadBudget = async () => {
-    const { data, error } = await supabase
-      .from("budgets")
-      .select("*")
-      .eq("user_id", user?.id);
-    if (error) throw error;
-    setBudget(data ?? []);
+  const loadBudget = async (isCloud = isCloudEnabled) => {
+    if (!user?.id) return; // Safety check
+
+    const localData = await LocalDB.getBudgets(user.id);
+    setBudget(localData);
+
+    if (isCloud) {
+      const { data, error } = await supabase
+        .from("budgets")
+        .select("*")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      if (data) {
+        await LocalDB.syncBudgets(user.id, data);
+        setBudget(data);
+      }
+    }
   };
 
-  //Creating Budget:
-  const createBudget = async (budgetData: Partial<Budget>) => {
-    const { data, error } = await supabase
-      .from("budgets")
-      .upsert(
+  const createBudget = async (
+    budgetData: Partial<Budget>,
+    isCloud = isCloudEnabled,
+  ) => {
+    await LocalDB.upsertBudget(budgetData);
+
+    if (isCloud) {
+      const { error } = await supabase.from("budgets").upsert(
         {
           user_id: budgetData.user_id,
           amount: Number(budgetData.amount),
@@ -109,40 +145,56 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
           period_type: budgetData.period_type,
           start_date: budgetData.start_date,
         },
-        {
-          onConflict: "user_id,period_type,category",
-        },
-      )
-      .select();
-
-    if (error) throw error;
+        { onConflict: "user_id,period_type,category" },
+      );
+      if (error) throw error;
+    }
+    await loadBudget(isCloud);
   };
 
-  //Creating Transactions:
-  const createTransactions = async (transactions: Partial<Transaction>[]) => {
-    const { error } = await supabase.from("transactions").insert(transactions);
+  const createTransactions = async (
+    newTransactions: Partial<Transaction>[],
+    isCloud = isCloudEnabled,
+  ) => {
+    await LocalDB.insertTransactions(newTransactions);
 
-    if (error) throw error;
+    setTransaction((prev) => {
+      const updated = [...(newTransactions as Transaction[]), ...prev];
+      return updated.sort(
+        (a, b) =>
+          new Date(b.transaction_date).getTime() -
+          new Date(a.transaction_date).getTime(),
+      );
+    });
+
+    if (isCloud) {
+      const { error } = await supabase
+        .from("transactions")
+        .insert(newTransactions);
+      if (error) console.error("Cloud sync failed:", error);
+    }
   };
 
-  //Returning Latest Transaction
-  const getLatestSMSTransaction = async () => {
+  const getLatestSMSTransaction = async (isCloud = isCloudEnabled) => {
+    if (!user?.id) return null; // Safety check
+
+    const localLatest = await LocalDB.getLatestSMSTransaction(user.id);
+    if (localLatest || !isCloud) return localLatest;
+
     const { data, error } = await supabase
       .from("transactions")
       .select("transaction_date, source_sms_id")
       .eq("source", "sms")
+      .eq("user_id", user.id)
       .order("transaction_date", { ascending: false })
-      .order("source_sms_id", { ascending: false }) // <-- Add secondary sort here
+      .order("source_sms_id", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (error) throw error;
-
-    return {
-      transaction_date: data?.transaction_date ?? null,
-      source_sms_id: data?.source_sms_id ?? null,
-    };
+    return data;
   };
+
   return (
     <TransactionContext.Provider
       value={{
@@ -162,8 +214,6 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
 export const useTransaction = () => {
   const context = useContext(TransactionContext);
-  if (context === undefined) {
-    throw new Error("must be inside the provider");
-  }
+  if (context === undefined) throw new Error("must be inside the provider");
   return context;
 };

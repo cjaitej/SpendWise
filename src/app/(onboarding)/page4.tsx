@@ -2,17 +2,23 @@ import { useAuth } from "@/context/AuthContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams } from "expo-router";
 import LottieView from "lottie-react-native";
-import { Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Switch, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OnBoardPage4Screen() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, updateStoragePreference } = useAuth();
+  const [cloudEnabled, setCloudEnabled] = useState(true); // Default to recommended
 
   const userName = user?.username;
   const { budget } = useLocalSearchParams();
 
   const handleGetStarted = async () => {
     try {
+      // 1. Save their storage preference first
+      await updateStoragePreference(cloudEnabled ? "cloud" : "device");
+
+      // 2. Mark onboarding as complete to route them to the main app
       await updateUser({
         onboardingCompleted: true,
       });
@@ -85,8 +91,9 @@ export default function OnBoardPage4Screen() {
                   </Text>
                 </View>
 
+                {/* Pro-tip: Added Number() to prevent crash if 'budget' is a string from search params */}
                 <Text className="text-primary font-semibold">
-                  ₹{budget.toLocaleString("en-IN")}
+                  ₹{Number(budget || 0).toLocaleString("en-IN")}
                 </Text>
               </View>
 
@@ -110,12 +117,39 @@ export default function OnBoardPage4Screen() {
                 <Text className="text-primary font-semibold">Complete</Text>
               </View>
             </View>
+
+            {/* ── NEW: Cloud Backup Toggle Card ── */}
+            <View className="mt-6 rounded-3xl border border-primary/30 bg-primary/5 p-5">
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-10 h-10 rounded-full bg-primary/20 items-center justify-center">
+                    <Ionicons name="cloud-upload" size={20} color="#00a878" />
+                  </View>
+                  <Text className="text-content-main font-bold text-base">
+                    Cloud Backup
+                  </Text>
+                </View>
+                <Switch
+                  value={cloudEnabled}
+                  onValueChange={setCloudEnabled}
+                  trackColor={{ false: "#e4e9f0", true: "#00a87860" }}
+                  thumbColor={cloudEnabled ? "#00a878" : "#9aaab8"}
+                />
+              </View>
+
+              <Text className="text-sm text-content-sub leading-5">
+                <Text className="font-bold text-primary">Recommended:</Text>{" "}
+                Keep this enabled to securely back up your data. If you ever
+                lose your device or reinstall the app, your transaction history
+                is safely restored.
+              </Text>
+            </View>
           </View>
 
           {/* CTA */}
           <TouchableOpacity
             className="bg-primary-dark justify-center items-center py-5 rounded-2xl mb-4"
-            onPress={() => handleGetStarted()}
+            onPress={handleGetStarted}
           >
             <Text className="text-xl text-content-white font-semibold">
               Go to Dashboard

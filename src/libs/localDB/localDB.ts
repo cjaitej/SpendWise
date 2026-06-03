@@ -1,3 +1,4 @@
+import * as Crypto from "expo-crypto";
 import * as SQLite from "expo-sqlite";
 import { Budget, Transaction } from "../../context/FinanceContext";
 
@@ -5,7 +6,6 @@ import { Budget, Transaction } from "../../context/FinanceContext";
 const db = SQLite.openDatabaseSync("finance.db");
 
 export const LocalDB = {
-  // ── 1. INITIALIZATION ──
   init: () => {
     db.execSync(`
       PRAGMA journal_mode = WAL;
@@ -22,7 +22,8 @@ export const LocalDB = {
         is_auto_detected INTEGER,
         created_at TEXT,
         updated_at TEXT,
-        source_sms_id INTEGER UNIQUE
+        source_sms_id INTEGER,
+        UNIQUE(user_id, source_sms_id)
       );
 
       CREATE TABLE IF NOT EXISTS budgets (
@@ -38,10 +39,10 @@ export const LocalDB = {
     `);
   },
 
-  // ── 2. TRANSACTIONS CRUD ──
-  getTransactions: async (): Promise<Transaction[]> => {
+  getTransactions: async (userId: string): Promise<Transaction[]> => {
     const data = await db.getAllAsync<Transaction>(
-      "SELECT * FROM transactions ORDER BY transaction_date DESC",
+      "SELECT * FROM transactions WHERE user_id = ? ORDER BY transaction_date DESC",
+      [userId],
     );
     return data.map((t) => ({
       ...t,
@@ -58,9 +59,8 @@ export const LocalDB = {
 
     try {
       for (const t of transactions) {
-        // Strict typing to prevent SQLiteBlob errors
         await statement.executeAsync({
-          $id: t.id ?? Math.random().toString(),
+          $id: t.id ?? Crypto.randomUUID(),
           $user_id: t.user_id!,
           $amount: t.amount!,
           $transaction_type: t.transaction_type!,
@@ -79,14 +79,22 @@ export const LocalDB = {
     }
   },
 
-  syncTransactions: async (transactions: Transaction[]) => {
-    db.execSync("DELETE FROM transactions");
+  syncTransactions: async (userId: string, transactions: Transaction[]) => {
+    // Only delete the active user's transactions before syncing
+    await db.runAsync("DELETE FROM transactions WHERE user_id = ?", [userId]);
     await LocalDB.insertTransactions(transactions);
   },
 
-  // ── 3. BUDGETS CRUD ──
-  getBudgets: async (): Promise<Budget[]> => {
-    return db.getAllAsync<Budget>("SELECT * FROM budgets");
+  syncBudgets: async (userId: string, budgets: Budget[]) => {
+    // Only delete the active user's budgets before syncing
+    await db.runAsync("DELETE FROM budgets WHERE user_id = ?", [userId]);
+    for (const b of budgets) await LocalDB.upsertBudget(b);
+  },
+
+  getBudgets: async (userId: string): Promise<Budget[]> => {
+    return db.getAllAsync<Budget>("SELECT * FROM budgets WHERE user_id = ?", [
+      userId,
+    ]);
   },
 
   upsertBudget: async (b: Partial<Budget>) => {
@@ -96,7 +104,7 @@ export const LocalDB = {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
       [
-        b.id ?? Math.random().toString(),
+        b.id ?? Crypto.randomUUID(),
         b.user_id!,
         b.category ?? "overall",
         b.amount!,
@@ -108,17 +116,14 @@ export const LocalDB = {
     );
   },
 
-  syncBudgets: async (budgets: Budget[]) => {
-    db.execSync("DELETE FROM budgets");
-    for (const b of budgets) await LocalDB.upsertBudget(b);
-  },
-
-  // ── 4. UTILS ──
-  getLatestSMSTransaction: async () => {
-    const data = await db.getFirstAsync<Transaction>(`
+  getLatestSMSTransaction: async (userId: string) => {
+    const data = await db.getFirstAsync<Transaction>(
+      `
       SELECT transaction_date, source_sms_id FROM transactions
-      WHERE source = 'sms' ORDER BY transaction_date DESC, source_sms_id DESC LIMIT 1
-    `);
+      WHERE source = 'sms' AND user_id = ? ORDER BY transaction_date DESC, source_sms_id DESC LIMIT 1
+    `,
+      [userId],
+    );
     return data ?? null;
   },
 };
