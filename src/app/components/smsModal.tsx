@@ -4,8 +4,10 @@ import { useTransaction } from "@/context/FinanceContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Easing,
+  Linking,
   Modal,
   PermissionsAndroid,
   Text,
@@ -110,11 +112,63 @@ export default function Index({ onClose }: Props) {
   const handleRefresh = async (): Promise<void> => {
     await Promise.all([loadTransactions(), loadBudget()]);
   };
+
   async function requestSMSPermission(): Promise<boolean> {
-    const granted = await PermissionsAndroid.request(
+    // Check current status before requesting
+    const currentStatus = await PermissionsAndroid.check(
       PermissionsAndroid.PERMISSIONS.READ_SMS,
     );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
+
+    if (currentStatus) return true;
+
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.READ_SMS,
+      {
+        title: "SMS Permission Required",
+        message:
+          "We need access to your SMS to automatically detect bank transactions. We never read OTPs or any sensitive messages.",
+        buttonPositive: "Allow",
+        buttonNegative: "Deny",
+      },
+    );
+
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) return true;
+
+    if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      // Android won't show dialog anymore — send user to app Settings
+      Alert.alert(
+        "Permission Blocked",
+        "SMS permission was denied. Please enable it manually from app Settings to sync transactions.",
+        [
+          { text: "Cancel", style: "cancel", onPress: () => onClose?.() },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              Linking.openSettings();
+              onClose?.();
+            },
+          },
+        ],
+      );
+      return false;
+    }
+
+    // First-time denial — ask once more with context
+    const grantedRetry = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.READ_SMS,
+      {
+        title: "Permission Needed",
+        message:
+          "Without SMS access, transactions cannot be auto-detected. Please allow to continue.",
+        buttonPositive: "Allow",
+        buttonNegative: "Cancel",
+      },
+    );
+
+    if (grantedRetry === PermissionsAndroid.RESULTS.GRANTED) return true;
+
+    onClose?.();
+    return false;
   }
 
   type TransactionType = "debit" | "credit";
