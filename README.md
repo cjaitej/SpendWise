@@ -1,56 +1,243 @@
-# Welcome to your Expo app 👋
+<div align="center">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# 💰 SpendWise
 
-## Get started
+**Smart expense tracking powered by NLP, SMS automation, and real-time financial insights.**
 
-1. Install dependencies
+![React Native](https://img.shields.io/badge/React%20Native-Latest-blue?logo=react)
+![Expo](https://img.shields.io/badge/Expo-Latest-black?logo=expo)
+![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript)
+![Supabase](https://img.shields.io/badge/Supabase-green?logo=supabase)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-   ```bash
-   npm install
-   ```
+> Track expenses automatically. Understand spending instantly. Manage finances smarter.
 
-2. Start the app
+</div>
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 📖 What is SpendWise?
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+SpendWise is a personal finance management application that automatically tracks expenses from transaction SMS messages and converts them into meaningful financial insights.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Unlike traditional expense trackers that rely on manual data entry and rule-based parsing, SpendWise leverages a **TinyBERT-based Named Entity Recognition (NER) model** to understand transaction SMS messages and convert them into structured financial records.
 
-## Get a fresh project
+Instead of manually entering every expense, SpendWise intelligently extracts transaction details from bank and UPI messages, categorizes spending, and provides visual analytics to help users better understand their financial habits.
 
-When you're ready, run:
+Whether you're monitoring daily expenses, managing budgets, or reviewing spending trends, SpendWise simplifies the entire process.
 
-```bash
-npm run reset-project
+---
+
+## 📸 Screenshots
+
+### 🔐 Authentication
+
+<p align="center">
+  <img src="./screenshots/LoginPage.jpeg" width="180" alt="Welcome Screen"/>
+  <img src="./screenshots/signupPage.jpeg" width="180" alt="Login Screen"/>
+  <img src="./screenshots/forgotpassword.jpeg" width="180" alt="Register Screen"/>
+</p>
+
+### 👋 Welcome & Onboarding
+
+<p align="center">
+  <img src="./screenshots/boardingPage1.jpeg" width="180" alt="boardingPage1"/>
+  <img src="./screenshots/boardingPage2.jpeg" width="180" alt="boardingPage2"/>
+  <img src="./screenshots/boardingPage3.jpeg" width="180" alt="boardingPage3"/>
+  <img src="./screenshots/boardingPage4.jpeg" width="180" alt="boardingPage4"/>
+</p>
+
+### 🏠App
+#### Home, Transaction and Profile Page
+<p align="center">
+  <img src="./screenshots/home.jpeg" width="180" alt="Home"/>
+  <img src="./screenshots/transactions.jpeg" width="180" alt="transactions"/>
+  <img src="./screenshots/profilePage.jpeg" width="180" alt="profile page"/>
+</p>
+
+#### AI Assitant
+<p align="center">
+  <img src="./screenshots/AI_home.jpeg" width="180" alt="AI Home"/>
+  <img src="./screenshots/Ai_response.jpeg" width="180" alt="AI Reply"/>
+</p>
+
+#### Insights Page
+<p align="center">
+  <img src="./screenshots/insights_this_month.jpeg" width="180" alt="this month insights"/>
+  <img src="./screenshots/insights_last_month.jpeg" width="180" alt="last month insights"/>
+  <img src="./screenshots/insights_last_6months.jpeg" width="180" alt="this 6 month insights"/>
+</p>
+
+---
+
+## ✨ Features
+
+### 📩 Smart SMS Expense Detection
+
+SpendWise automatically detects and processes transaction SMS messages from banks, credit cards, and UPI services. As soon as a transaction occurs, the app extracts relevant details and records the expense without requiring any manual input.
+
+* Automatic transaction detection
+* Real-time expense recording
+* Support for multiple SMS formats
+* No manual expense entry
+
+---
+
+### 🤖 NLP-Powered SMS Understanding
+
+Traditional rule-based SMS parsers break whenever banks change message formats. SpendWise solves this problem using a Natural Language Processing (NLP) pipeline powered by a quantized TinyBERT model running entirely on-device.
+
+The model performs **Named Entity Recognition (NER)** on transaction SMS messages to identify and extract key financial entities such as:
+
+* Transaction Amount
+* Merchant Name
+* Transaction Type
+* Account Number
+* UPI IDs
+* Date & Time Information
+
+Example SMS:
+
+```text
+Rs.450 debited from A/C XXXX1234 at Amazon
+
+INR 1299 spent using SBI Card at Swiggy
+
+Transaction of Rs.2500 completed via UPI to Rahul
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The NER model converts these unstructured messages into standardized transaction records that can be analyzed and categorized automatically.
 
-### Other setup steps
+#### Why TinyBERT?
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+* Lightweight and optimized for mobile devices
+* Fast on-device inference
+* No internet connection required
+* Better adaptability across different bank SMS formats
+* Enhanced privacy since SMS data never leaves the device
 
-## Learn more
+This NLP-based approach significantly improves extraction accuracy compared to traditional regex-only parsers while maintaining complete user privacy.
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 🏷 Automatic Expense Categorization
 
-## Join the community
+Every transaction is automatically assigned to an appropriate category, helping users understand spending patterns without manually organizing expenses.
 
-Join our community of developers creating universal apps.
+Supported categories include:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+* Food
+* Shopping
+* Travel
+* Education
+* Others
+
+---
+
+### 📊 Spending Analytics & Insights
+
+Visual dashboards provide a clear overview of spending behavior through interactive charts and category-wise breakdowns.
+
+Track:
+
+* Monthly Expense Trends
+* Category Distribution
+* Spending Patterns
+* Income vs Expense Analysis
+* Top Spending Categories
+
+---
+
+### 🎯 Budget Tracking
+
+Set spending limits and monitor progress throughout the month.
+
+Features include:
+
+* Monthly Budget Goals
+* Category-wise Budget Tracking
+* Spending Progress Indicators
+* Overspending Alerts
+
+---
+
+### 💬 AI Financial Assistant
+
+Interact with your financial data using natural language. Ask questions about your spending habits and receive instant insights powered by AI.
+
+Examples:
+
+* "How much did I spend on food this month?"
+* "Which category had the highest expenses?"
+* "What was my biggest transaction last week?"
+* "Show my spending trends for the past 3 months."
+
+---
+
+### ☁️ Optional Cloud Synchronization
+
+Users can securely back up and synchronize financial data across devices using Supabase.
+
+Benefits:
+
+* Multi-device Access
+* Secure Cloud Backup
+* Real-time Synchronization
+* Data Recovery Support
+
+---
+
+### 📱 Offline-First Local Storage
+
+SpendWise works completely offline using local device storage.
+
+Benefits:
+
+* Fast Performance
+* Enhanced Privacy
+* No Internet Dependency
+* Full Access to Transaction History
+
+---
+
+### 🔐 Secure Authentication
+
+User accounts are protected through modern authentication mechanisms.
+
+Supported methods:
+
+* Email & Password Login
+* Google Sign-In
+* Email Verification
+* Password Reset
+* Secure Session Management
+
+---
+
+## 🛠 Tech Stack
+
+| Layer          | Technology                                    |
+| -------------- | --------------------------------------------- |
+| Framework      | React Native + Expo                           |
+| Language       | TypeScript                                    |
+| Navigation     | Expo Router                                   |
+| Backend        | Supabase                                      |
+| Authentication | Supabase Auth, Google OAuth                   |
+| Database       | Supabase PostgreSQL                           |
+| Local Storage  | SQLite / AsyncStorage                         |
+| SMS Processing | Android SMS APIs                              |
+| NLP Engine     | TinyBERT-based Named Entity Recognition (NER) |
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 👨‍💻 Author
+
+**Jaitej C**
+
+Built with ❤️
