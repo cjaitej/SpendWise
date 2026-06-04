@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, G } from "react-native-svg";
+import RefreshableScrollView from "../components/refreshableScrollView";
 
 const FILTERS = ["This Month", "Last Month", "Last 6 Months"] as const;
 type FilterType = (typeof FILTERS)[number];
@@ -100,7 +101,8 @@ function MiniBar({ percent, color }: { percent: number; color: string }) {
 }
 
 export default function Insights() {
-  const { transactions } = useTransaction();
+  const { transactions, loadTransactions, loadBudget } = useTransaction();
+
   const [selectedFilter, setSelectedFilter] = useState<FilterType>(FILTERS[0]);
 
   const dates = useMemo(() => {
@@ -339,7 +341,6 @@ export default function Insights() {
       });
     }
 
-    // ── 2. Savings Rate ───────────────────────────────────────────────────
     if (totalEarned > 0) {
       const savingsRate = Math.round(
         ((totalEarned - totalSpent) / totalEarned) * 100,
@@ -384,7 +385,6 @@ export default function Insights() {
       });
     }
 
-    // ── 3. Avg Transaction Size ───────────────────────────────────────────
     const avgTxn =
       debitTransactions.length > 0 ? totalSpent / debitTransactions.length : 0;
     const prevAvgTxn =
@@ -797,11 +797,16 @@ export default function Insights() {
     totalEarned,
   ]);
 
+  const handleRefresh = async (): Promise<void> => {
+    await Promise.all([loadTransactions(), loadBudget()]);
+  };
+
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-[#F8FAFC]">
-      <ScrollView
+      <RefreshableScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        onRefreshAction={handleRefresh}
       >
         <View className="px-5 pt-2 gap-6">
           {/* Header */}
@@ -1134,7 +1139,7 @@ export default function Insights() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 }
