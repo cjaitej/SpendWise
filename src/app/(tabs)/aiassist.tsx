@@ -1,5 +1,5 @@
 import { useTransaction } from "@/context/FinanceContext";
-import { getFinanceAIResponse } from "@/libs/gemini/geminiService"; // Adjust this path to your helper file
+import { getFinanceAIResponse } from "@/libs/gemini/geminiService";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -68,7 +68,7 @@ export function ChatLoading() {
 
 function ChatBox({ chat }: { chat: Message[] }) {
   return (
-    <View className="flex-1 gap-3 mt-5">
+    <View className="flex-1 gap-3 mt-5 px-5">
       {chat.map((item, index) => (
         <View
           key={index}
@@ -127,7 +127,6 @@ export default function Aiassist() {
     setAIMessageLoading(true);
 
     try {
-      // Calling your exported helper function directly
       const responseText = await getFinanceAIResponse({
         message: finalMessage,
         transactions: transactions,
@@ -163,8 +162,9 @@ export default function Aiassist() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View className="flex-1 gap-1 px-5 pt-3">
-          <View className="flex-row justify-between items-center">
+        <View className="flex-1 gap-1 pt-3">
+          {/* Header */}
+          <View className="flex-row justify-between items-center px-5">
             <View className="flex-row gap-2 items-center">
               <Ionicons name="sparkles" size={18} color="#7c3aed" />
               <Text className="text-xl font-semibold">AI Assistant</Text>
@@ -178,11 +178,28 @@ export default function Aiassist() {
               <Ionicons name="duplicate-outline" size={18} className="p-2" />
             </TouchableOpacity>
           </View>
+
+          {/* Prominent Privacy Banner */}
+          <View className="mx-5 mt-4 p-3 bg-surface border border-border rounded-xl flex-row items-start gap-2">
+            <Ionicons
+              name="information-circle"
+              size={18}
+              color="#7c3aed"
+              style={{ marginTop: 2 }}
+            />
+            <Text className="flex-1 text-sm text-content-main leading-5">
+              <Text className="font-semibold">Privacy Note: </Text>
+              Transaction details (merchant, type, amount, category) are shared
+              with Gemini to analyze your data. No OTP or Sensitive data is
+              stored or shared.
+            </Text>
+          </View>
+
           <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
             {chat.length > 0 ? (
               <ChatBox chat={chat} />
             ) : (
-              <View className="flex-1 justify-center mt-30">
+              <View className="flex-1 justify-center mt-10 px-5">
                 <Text className="text-content-main text-3xl font-semibold">
                   Hi, Jaitej! 👋
                 </Text>
@@ -209,10 +226,15 @@ export default function Aiassist() {
                 </View>
               </View>
             )}
-            {aiMessageLoading ? <ChatLoading /> : null}
+            {aiMessageLoading ? (
+              <View className="px-5 mt-5">
+                <ChatLoading />
+              </View>
+            ) : null}
           </ScrollView>
 
-          <View className="pb-5 items-center gap-1 bg-card">
+          {/* Input Area */}
+          <View className="pb-5 px-5 items-center gap-1 bg-card">
             <View className="flex-row justify-between items-center pl-4 pr-2 py-1 border border-border rounded-full bg-surface shadow-sm w-full">
               <TextInput
                 placeholder="Ask questions regarding your finance..."
@@ -225,17 +247,21 @@ export default function Aiassist() {
 
               <TouchableOpacity
                 disabled={disableSend}
-                className={`${disableSend ? "bg-content-muted" : "bg-primary"} w-11 h-11 rounded-full items-center justify-center`}
+                className={`${
+                  disableSend ? "bg-content-muted" : "bg-primary"
+                } w-11 h-11 rounded-full items-center justify-center`}
                 onPress={() => handleSend()}
               >
                 <Ionicons name="arrow-up" size={20} color="#ffffff" />
               </TouchableOpacity>
             </View>
-            <View className="flex-row items-center justify-center mt-1">
-              <Ionicons name="information-circle" size={15} color="#5a6a7a" />
-              <Text className="text-sm text-content-sub ml-1">
-                AI can make mistakes. Verify important info.
-              </Text>
+            <View className="items-center justify-center mt-2 px-2">
+              <View className="flex-row items-center">
+                <Ionicons name="information-circle" size={15} color="#5a6a7a" />
+                <Text className="text-sm text-content-sub ml-1">
+                  AI can make mistakes. Verify important info.
+                </Text>
+              </View>
             </View>
           </View>
         </View>

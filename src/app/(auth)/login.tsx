@@ -22,7 +22,22 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const { signIn } = useAuth();
+  // Inside LoginScreen component
+  const { signIn, signInWithGoogle } = useAuth(); // <-- Add signInWithGoogle
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      Alert.alert(
+        "Google Sign-In Failed",
+        error.message || "Something went wrong",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     setIsLoading(true);
@@ -178,7 +193,11 @@ export default function LoginScreen() {
 
               <View className="flex-1 border-b-2 border-border bg-border" />
             </View>
-            <TouchableOpacity className="flex-row items-center justify-center gap-3 border border-gray-300 py-4 rounded-xl">
+            <TouchableOpacity
+              className="flex-row items-center justify-center gap-3 border border-gray-300 py-4 rounded-xl"
+              onPress={handleGoogleSignIn}
+              disabled={isLoading}
+            >
               <Image
                 source={require("../../../assets/images/auth/google.png")}
                 style={{ width: 20, height: 20 }}

@@ -46,7 +46,7 @@ export default function SignupScreen() {
   const [showConfirmPassword, setConfirmShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // Added loading state
 
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const router = useRouter();
   const hasMinLength = password.length >= 8;
@@ -78,6 +78,20 @@ export default function SignupScreen() {
       Alert.alert("Signup Failed", error.message);
     } finally {
       setIsLoading(false); // Re-enable inputs
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      Alert.alert(
+        "Google Sign-Up Failed",
+        error.message || "Something went wrong",
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -258,7 +272,11 @@ export default function SignupScreen() {
 
               <View className="flex-1 border-b-2 border-border bg-border" />
             </View>
-            <TouchableOpacity className="flex-row items-center justify-center gap-3 border border-gray-300 py-4 rounded-xl">
+            <TouchableOpacity
+              className="flex-row items-center justify-center gap-3 border border-gray-300 py-4 rounded-xl"
+              onPress={handleGoogleSignUp}
+              disabled={isLoading}
+            >
               <Image
                 source={require("../../../assets/images/auth/google.png")}
                 style={{ width: 20, height: 20 }}

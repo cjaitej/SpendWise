@@ -1,5 +1,6 @@
 import { LocalDB } from "@/libs/localDB/localDB";
 import { supabase } from "@/libs/supabase/client";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import {
   createContext,
   ReactNode,
@@ -7,6 +8,10 @@ import {
   useEffect,
   useState,
 } from "react";
+
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID!,
+});
 
 export interface User {
   id: string;
@@ -51,6 +56,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateStoragePreference: (preference: "cloud" | "device") => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -186,6 +192,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: "spendwise://login",
+      },
     });
 
     if (error) throw error;
@@ -194,6 +203,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+
+      if (response.type === "success") {
+        const idToken = response.data.idToken;
+
+        if (!idToken) throw new Error("No ID token returned");
+
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: idToken,
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+          const profile = await fetchUserProfile(data.user.id);
+          setUser(profile);
+        }
+      } else {
+        // Handle 'cancelled' or other non-success states gracefully
+        console.log("Google Sign-In was cancelled or failed:", response.type);
+        return;
+      }
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      throw error;
+    }
   };
 
   const userNameAvailability = async (username: string): Promise<boolean> => {
@@ -255,6 +296,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userNameAvailability,
         updateUser,
         updateStoragePreference,
+        signInWithGoogle,
       }}
     >
       {children}
