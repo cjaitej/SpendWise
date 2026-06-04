@@ -60,6 +60,7 @@ export async function getFinanceAIResponse({
       - Be mobile friendly
       - Use bullet points when useful
       - Never hallucinate fake transactions
+      - Currency is Indian
     `;
 
     const result = await model.generateContent(prompt);
