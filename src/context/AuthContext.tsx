@@ -1,6 +1,8 @@
 import { LocalDB } from "@/libs/localDB/localDB";
 import { supabase } from "@/libs/supabase/client";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import * as Linking from "expo-linking";
+import { router } from "expo-router";
 import {
   createContext,
   ReactNode,
@@ -8,6 +10,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { Alert } from "react-native";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID!,
@@ -57,6 +60,8 @@ interface AuthContextType {
   updateStoragePreference: (preference: "cloud" | "device") => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,7 +72,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     checkSession();
+
+    Linking.getInitialURL().then((url) => handleDeepLink(url));
+
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
+
+  const handleDeepLink = async (url: string | null) => {
+    if (!url) return;
+
+    const paramsStr = url.split("#")[1] || url.split("?")[1];
+    if (!paramsStr) return;
+
+    const params = paramsStr.split("&").reduce(
+      (acc, current) => {
+        const [key, value] = current.split("=");
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    if (params.error_description) {
+      const errorMessage = decodeURIComponent(
+        params.error_description.replace(/\+/g, " "),
+      );
+      Alert.alert("Link Invalid", errorMessage);
+
+      setTimeout(() => {
+        router.replace("/(auth)/login");
+      }, 100);
+
+      return;
+    }
+
+    if (params.access_token && params.refresh_token) {
+      const { error } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token,
+      });
+
+      if (!error) {
+        checkSession();
+      } else {
+        console.error("Error setting session from URL:", error.message);
+      }
+    }
+  };
 
   const checkSession = async () => {
     setIsLoading(true);
@@ -237,6 +294,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendPasswordResetEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "spendwise://update-password",
+    });
+
+    if (error) throw error;
+  };
+
+  // Add inside AuthProvider:
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   const userNameAvailability = async (username: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
@@ -297,6 +368,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateUser,
         updateStoragePreference,
         signInWithGoogle,
+        sendPasswordResetEmail,
+        updatePassword,
       }}
     >
       {children}

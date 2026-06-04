@@ -23,7 +23,7 @@ export default function LoginScreen() {
   const router = useRouter();
 
   // Inside LoginScreen component
-  const { signIn, signInWithGoogle } = useAuth(); // <-- Add signInWithGoogle
+  const { signIn, signInWithGoogle } = useAuth();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -169,9 +169,13 @@ export default function LoginScreen() {
                 </View>
               </View>
 
-              <Text className="text-right text-primary font-semibold mt-3">
-                Forgot Password?
-              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/(auth)/reset-password")}
+              >
+                <Text className="text-right text-primary font-semibold mt-3">
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
