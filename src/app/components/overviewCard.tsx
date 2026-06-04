@@ -295,13 +295,13 @@ export default function OverviewCard() {
                 </Text>
               </View>
             </View>
-            <View className="bg-content-white/10 p-2 rounded-full shrink-0 border border-content-white/10">
+            {/* <View className="bg-content-white/10 p-2 rounded-full shrink-0 border border-content-white/10">
               <Ionicons
                 name="chevron-forward"
                 size={14}
                 className="text-content-white/90"
               />
-            </View>
+            </View> */}
           </View>
 
           <View>

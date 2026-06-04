@@ -1,7 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-import { useTransaction } from "@/context/FinanceContext";
 import { Ionicons } from "@expo/vector-icons";
-import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -18,7 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function OnBoardPage3Screen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { createBudget } = useTransaction();
 
   const [budget, setBudget] = useState(10000);
 
@@ -30,28 +27,27 @@ export default function OnBoardPage3Screen() {
     { id: "others", name: "Others", icon: "apps", percentage: 20 },
   ]);
 
-  const updatePercentage = (id: string, newValue: number) => {
-    if (id === "others") return;
+  // Calculate remaining pool
+  const remaining =
+    100 - allocations.reduce((sum, item) => sum + item.percentage, 0);
 
-    setAllocations((prev) => {
-      const updatedValue = Math.round(newValue);
-      const current = prev.find((item) => item.id === id);
-      const others = prev.find((item) => item.id === "others");
-
-      if (!current || !others) return prev;
-
-      const diff = updatedValue - current.percentage;
-      const newOthersPercentage = others.percentage - diff;
-
-      if (newOthersPercentage < 0) return prev;
-
-      return prev.map((item) => {
-        if (item.id === id) return { ...item, percentage: updatedValue };
-        if (item.id === "others")
-          return { ...item, percentage: newOthersPercentage };
+  const adjustPercentage = (id: string, amount: number) => {
+    setAllocations((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const newPercentage = item.percentage + amount;
+          // Ensure it doesn't go below 0, above 100, or exceed the remaining pool
+          if (
+            newPercentage >= 0 &&
+            newPercentage <= 100 &&
+            remaining - amount >= 0
+          ) {
+            return { ...item, percentage: newPercentage };
+          }
+        }
         return item;
-      });
-    });
+      }),
+    );
   };
 
   const handleBudgetChange = (text: string) => {
@@ -59,45 +55,15 @@ export default function OnBoardPage3Screen() {
     setBudget(isNaN(numeric) ? 0 : numeric);
   };
 
-  const handleContinue = async () => {
-    try {
-      const startDate = new Date().toISOString();
-
-      // 1. Create the overall budget (no category)
-      await createBudget({
-        user_id: user?.id,
-        amount: budget,
-        category: null,
-        period_type: "monthly",
-        start_date: startDate,
-      });
-
-      // 2. Create a budget entry for each category allocation
-      await Promise.all(
-        allocations.map((item) =>
-          createBudget({
-            user_id: user?.id,
-            amount: Math.round((budget * item.percentage) / 100),
-            category: item.id,
-            period_type: "monthly",
-            start_date: startDate,
-          }),
-        ),
-      );
-      router.push({
-        pathname: "/(onboarding)/page4",
-        params: {
-          budget: budget,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to save budget:", error);
-      // TODO: show error toast / alert
-    }
+  const handleContinue = () => {
+    router.push({
+      pathname: "/(onboarding)/page4",
+      params: {
+        budget: budget,
+        allocations: JSON.stringify(allocations), // Pass allocations to the next screen if needed
+      },
+    });
   };
-
-  const othersPercentage =
-    allocations.find((a) => a.id === "others")?.percentage ?? 0;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-background">
@@ -111,7 +77,6 @@ export default function OnBoardPage3Screen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Progress */}
           <View className="flex-row gap-2 mt-4">
             <View className="border-4 w-12 rounded-2xl border-gray-300"></View>
             <View className="border-4 w-12 rounded-2xl border-gray-300"></View>
@@ -119,7 +84,6 @@ export default function OnBoardPage3Screen() {
             <View className="border-4 w-12 rounded-2xl border-gray-300"></View>
           </View>
 
-          {/* Header */}
           <View className="mt-5">
             <Text className="text-2xl font-semibold text-content-main">
               Allocate your{" "}
@@ -130,7 +94,6 @@ export default function OnBoardPage3Screen() {
             </Text>
           </View>
 
-          {/* Budget Input */}
           <View className="mt-4 bg-card border border-border rounded-2xl px-4 py-3 flex-row items-center">
             <Text className="text-xl font-bold text-primary mr-1">₹</Text>
             <TextInput
@@ -145,7 +108,19 @@ export default function OnBoardPage3Screen() {
             <Text className="text-xs text-content-muted ml-2">/ month</Text>
           </View>
 
-          {/* Categories */}
+          <View className="mt-4 flex-row justify-between items-center bg-primary-light px-4 py-3 rounded-xl">
+            <Text className="text-sm font-semibold text-content-main">
+              Left to allocate:
+            </Text>
+            <Text
+              className={`text-base font-bold ${
+                remaining === 0 ? "text-primary" : "text-orange-500"
+              }`}
+            >
+              {remaining}%
+            </Text>
+          </View>
+
           <View className="mt-3 gap-2">
             {allocations.map((item) => {
               const categoryAmount = (budget * item.percentage) / 100;
@@ -153,65 +128,69 @@ export default function OnBoardPage3Screen() {
               return (
                 <View
                   key={item.id}
-                  className="bg-card border border-border rounded-2xl px-3 pt-3 pb-2"
+                  className="bg-card border border-border rounded-2xl px-3 py-3 flex-row justify-between items-center"
                 >
-                  <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center gap-2">
-                      <View className="bg-primary-light p-2 rounded-full">
-                        <Ionicons
-                          name={item.icon as any}
-                          size={16}
-                          color="#00a878"
-                        />
-                      </View>
-                      <View>
-                        <Text className="font-semibold text-sm text-content-main">
-                          {item.name}
-                        </Text>
-                        <Text className="text-xs text-content-sub">
-                          ₹{categoryAmount.toLocaleString("en-IN")}
-                        </Text>
-                      </View>
+                  <View className="flex-row items-center gap-2 flex-1">
+                    <View className="bg-primary-light p-2 rounded-full">
+                      <Ionicons
+                        name={item.icon as any}
+                        size={16}
+                        color="#00a878"
+                      />
                     </View>
-                    <Text className="text-sm font-bold text-primary">
-                      {item.percentage}%
-                    </Text>
-                  </View>
-
-                  {item.id !== "others" ? (
-                    <Slider
-                      style={{ width: "100%", height: 32, marginTop: 4 }}
-                      minimumValue={0}
-                      maximumValue={item.percentage + othersPercentage}
-                      step={1}
-                      value={item.percentage}
-                      minimumTrackTintColor="#00a878"
-                      maximumTrackTintColor="#e4e9f0"
-                      thumbTintColor="#00875f"
-                      onValueChange={(value) =>
-                        updatePercentage(item.id, value)
-                      }
-                    />
-                  ) : (
-                    <View className="mt-2 mb-1">
-                      <View className="h-1.5 bg-surface rounded-full overflow-hidden">
-                        <View
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${item.percentage}%` }}
-                        />
-                      </View>
-                      <Text className="text-xs text-content-muted mt-1">
-                        Automatically adjusted
+                    <View>
+                      <Text className="font-semibold text-sm text-content-main">
+                        {item.name}
+                      </Text>
+                      <Text className="text-xs text-content-sub">
+                        ₹{categoryAmount.toLocaleString("en-IN")}
                       </Text>
                     </View>
-                  )}
+                  </View>
+
+                  {/* Stepper Controls */}
+                  <View className="flex-row items-center gap-3">
+                    <TouchableOpacity
+                      onPress={() => adjustPercentage(item.id, -5)}
+                      disabled={item.percentage === 0}
+                      className={`p-1.5 rounded-full ${
+                        item.percentage === 0
+                          ? "bg-gray-100"
+                          : "bg-primary-light"
+                      }`}
+                    >
+                      <Ionicons
+                        name="remove"
+                        size={20}
+                        color={item.percentage === 0 ? "#9aaab8" : "#00a878"}
+                      />
+                    </TouchableOpacity>
+
+                    <Text className="text-base font-bold w-10 text-center text-content-main">
+                      {item.percentage}%
+                    </Text>
+
+                    <TouchableOpacity
+                      onPress={() => adjustPercentage(item.id, 5)}
+                      disabled={remaining < 5}
+                      className={`p-1.5 rounded-full ${
+                        remaining < 5 ? "bg-gray-100" : "bg-primary-light"
+                      }`}
+                    >
+                      <Ionicons
+                        name="add"
+                        size={20}
+                        color={remaining < 5 ? "#9aaab8" : "#00a878"}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               );
             })}
           </View>
 
           {/* Tip */}
-          <View className="mt-3 bg-primary-light px-5 py-5 rounded-2xl gap-3">
+          <View className="mt-4 bg-primary-light px-5 py-5 rounded-2xl gap-3">
             <View className="flex-row items-center gap-2">
               <Ionicons name="analytics" size={24} color="#00a878" />
               <Text className="text-base font-semibold text-primary">
@@ -225,14 +204,23 @@ export default function OnBoardPage3Screen() {
           </View>
         </ScrollView>
 
-        {/* Continue */}
+        {/* Continue Button */}
         <View className="px-5 pb-4 pt-2 bg-background">
           <TouchableOpacity
-            className="py-4 rounded-2xl items-center justify-center bg-primary-dark"
+            className={`py-4 rounded-2xl items-center justify-center ${
+              remaining === 0 ? "bg-primary-dark" : "bg-gray-300"
+            }`}
             onPress={handleContinue}
+            disabled={remaining !== 0} // Optional: Force exactly 100% before moving forward
           >
-            <Text className="text-content-white text-base font-semibold">
-              Continue
+            <Text
+              className={`text-base font-semibold ${
+                remaining === 0 ? "text-content-white" : "text-gray-500"
+              }`}
+            >
+              {remaining === 0
+                ? "Continue"
+                : `Allocate remaining ${remaining}%`}
             </Text>
           </TouchableOpacity>
         </View>

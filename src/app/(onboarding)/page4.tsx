@@ -118,7 +118,6 @@ export default function OnBoardPage4Screen() {
               </View>
             </View>
 
-            {/* ── NEW: Cloud Backup Toggle Card ── */}
             <View className="mt-6 rounded-3xl border border-primary/30 bg-primary/5 p-5">
               <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center gap-3">
@@ -137,11 +136,23 @@ export default function OnBoardPage4Screen() {
                 />
               </View>
 
-              <Text className="text-sm text-content-sub leading-5">
-                <Text className="font-bold text-primary">Recommended:</Text>{" "}
-                Keep this enabled to securely back up your data. If you ever
-                lose your device or reinstall the app, your transaction history
-                is safely restored.
+              <Text
+                className={`text-sm leading-5 ${cloudEnabled ? "text-content-sub" : "text-red-500"}`}
+              >
+                {cloudEnabled ? (
+                  <>
+                    <Text className="font-bold text-primary">Recommended:</Text>{" "}
+                    Keep this enabled to securely back up your data. If you ever
+                    lose your device or reinstall the app, your transaction
+                    history is safely restored.
+                  </>
+                ) : (
+                  <>
+                    <Text className="font-bold">Warning:</Text> If cloud backup
+                    is turned off, your data will be completely lost if you
+                    uninstall or reinstall the app.
+                  </>
+                )}
               </Text>
             </View>
           </View>

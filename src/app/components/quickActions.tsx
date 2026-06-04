@@ -2,6 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import AddTransactionModal from "../components/addTransaction";
+import BudgetAllocationModal from "../components/setBudget";
+import WipModal from "../components/workinProgress";
 import Index from "./smsModal";
 
 interface Props {
@@ -42,6 +45,9 @@ function QuickActionsCard({ iconName, text, color, to, onPress }: Props) {
 
 export default function QuickActions() {
   const [showSmsModal, setShowSmsModal] = useState(false);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [showWipModal, setShowWipModal] = useState(false);
 
   return (
     <View className="gap-3">
@@ -55,34 +61,42 @@ export default function QuickActions() {
           onPress={() => setShowSmsModal(true)}
         />
 
-        {showSmsModal ? (
-          <Index
-            onClose={() => {
-              setShowSmsModal(false);
-            }}
-          />
-        ) : (
-          ""
-        )}
+        {showSmsModal && <Index onClose={() => setShowSmsModal(false)} />}
+
         <QuickActionsCard
           iconName="scan-outline"
           text="Scan Receipt"
           color="text-entertainment"
-          to="/(tabs)/aiassist"
+          onPress={() => setShowWipModal(true)}
         />
 
         <QuickActionsCard
           iconName="receipt-outline"
           text="Add Expense"
           color="text-shopping"
-          to="/(tabs)/aiassist"
+          onPress={() => setShowAddExpenseModal(true)}
         />
 
         <QuickActionsCard
           iconName="wallet-outline"
           text="Set Budget"
           color="text-food"
-          to="/(tabs)/aiassist"
+          onPress={() => setShowBudgetModal(true)}
+        />
+
+        <AddTransactionModal
+          visible={showAddExpenseModal}
+          onClose={() => setShowAddExpenseModal(false)}
+        />
+
+        <BudgetAllocationModal
+          visible={showBudgetModal}
+          onClose={() => setShowBudgetModal(false)}
+        />
+
+        <WipModal
+          visible={showWipModal}
+          onClose={() => setShowWipModal(false)}
         />
       </View>
     </View>
