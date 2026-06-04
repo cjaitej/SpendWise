@@ -21,7 +21,7 @@ export default function OnBoardScreen() {
               Welcome to
             </Text>
 
-            <Text className="text-4xl text-primary font-extrabold">
+            <Text className="text-2xl text-primary font-extrabold">
               SpendWise
             </Text>
 
