@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { useTransaction } from "@/context/FinanceContext";
 import { getFinanceAIResponse } from "@/libs/gemini/geminiService";
 import { Ionicons } from "@expo/vector-icons";
@@ -108,6 +109,7 @@ export default function Aiassist() {
   const [chat, setChat] = useState<Message[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const { user } = useAuth();
   const { transactions } = useTransaction();
 
   const handleSend = async (customMessage?: string) => {
@@ -201,7 +203,7 @@ export default function Aiassist() {
             ) : (
               <View className="flex-1 justify-center mt-10 px-5">
                 <Text className="text-content-main text-3xl font-semibold">
-                  Hi, Jaitej! 👋
+                  Hi, {user?.name}! 👋
                 </Text>
 
                 <Text className="text-content-main text-xl font-semibold max-w-62.5 mt-2 mb-10">
