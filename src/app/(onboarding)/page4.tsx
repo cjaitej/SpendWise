@@ -15,10 +15,7 @@ export default function OnBoardPage4Screen() {
 
   const handleGetStarted = async () => {
     try {
-      // 1. Save their storage preference first
       await updateStoragePreference(cloudEnabled ? "cloud" : "device");
-
-      // 2. Mark onboarding as complete to route them to the main app
       await updateUser({
         onboardingCompleted: true,
       });

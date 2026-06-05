@@ -94,7 +94,7 @@ function ChatBox({ chat }: { chat: Message[] }) {
   );
 }
 
-export default async function Aiassist() {
+export default function Aiassist() {
   const suggestions = [
     "Where did I overspend this month?",
     "How much did I spend on food?",

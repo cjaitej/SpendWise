@@ -14,11 +14,20 @@ export default function OnBoardPage2Screen() {
   const [username, setUsername] = useState<string>("");
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [isTooShort, setIsTooShort] = useState<boolean>(false);
 
   useEffect(() => {
     const trimmed = username.trim();
 
-    if (trimmed.length < 5) {
+    if (trimmed.length > 0 && trimmed.length < 5) {
+      setIsAvailable(null);
+      setIsTooShort(true);
+      return;
+    }
+
+    setIsTooShort(false);
+
+    if (trimmed.length === 0) {
       setIsAvailable(null);
       return;
     }
@@ -116,6 +125,8 @@ export default function OnBoardPage2Screen() {
                 placeholder="Choose a unique username"
                 value={username}
                 onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
                 className="mt-1 text-base text-black p-0 placeholder:text-content-muted"
               />
 
@@ -125,13 +136,20 @@ export default function OnBoardPage2Screen() {
                 </Text>
               )}
 
+              {/* Show the length warning message */}
+              {isTooShort && (
+                <Text className="text-xs text-red-500 mt-1">
+                  Username must be at least 5 characters
+                </Text>
+              )}
+
               {isAvailable === true && (
                 <Text className="text-xs text-green-600 mt-1">
                   ✓ Username available
                 </Text>
               )}
 
-              {isAvailable === false && (
+              {isAvailable === false && !isTooShort && (
                 <Text className="text-xs text-red-500 mt-1">
                   ✗ Username already taken
                 </Text>
@@ -143,9 +161,13 @@ export default function OnBoardPage2Screen() {
           </Text>
         </View>
         <TouchableOpacity
-          className="bg-primary-dark justify-center items-center py-5 rounded-2xl"
+          className={`justify-center items-center py-5 rounded-2xl ${
+            isAvailable && name.trim().length > 0
+              ? "bg-primary-dark"
+              : "bg-gray-300"
+          }`}
           onPress={handleContinue}
-          disabled={!isAvailable}
+          disabled={!isAvailable || name.trim().length === 0}
         >
           <Text className="text-xl text-content-white font-semibold">
             Continue
