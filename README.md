@@ -16,15 +16,24 @@
 
 ---
 
+## Why SpendWise?
+
+In today's digital world, people make payments through multiple platforms such as Paytm, PhonePe, Google Pay, banking applications, credit cards, and other UPI services. As transactions are spread across different apps and accounts, it becomes difficult to track expenses and gain a complete understanding of personal spending habits.
+
+SpendWise addresses this challenge by automatically extracting transaction details from SMS notifications and consolidating them into a single, unified dashboard. Users no longer need to switch between multiple applications or manually record expenses. By bringing all transactions together in one place, SpendWise provides a clear overview of spending patterns, helps identify unnecessary expenses, and enables smarter financial decisions.
+
+---
+
 ## 📖 What is SpendWise?
 
-SpendWise is a personal finance management application that automatically tracks expenses from transaction SMS messages and converts them into meaningful financial insights.
+SpendWise is an AI-powered personal finance management application that automatically tracks expenses from transaction SMS messages and transforms them into meaningful financial insights.
 
-Unlike traditional expense trackers that rely on manual data entry and rule-based parsing, SpendWise leverages a **TinyBERT-based Named Entity Recognition (NER) model** to understand transaction SMS messages and convert them into structured financial records.
+Unlike traditional expense trackers that rely on manual data entry or rule-based SMS parsing, SpendWise leverages a **TinyBERT-based Named Entity Recognition (NER) model** to intelligently understand transaction messages and convert them into structured financial records.
 
-Instead of manually entering every expense, SpendWise intelligently extracts transaction details from bank and UPI messages, categorizes spending, and provides visual analytics to help users better understand their financial habits.
+The application automatically extracts key information such as transaction amount, merchant name, payment method, and account details from bank and UPI messages. These transactions are then categorized and visualized through interactive analytics, allowing users to better understand their financial behavior.
 
-Whether you're monitoring daily expenses, managing budgets, or reviewing spending trends, SpendWise simplifies the entire process.
+Whether you're monitoring daily expenses, managing budgets, identifying spending trends, or reviewing monthly financial activity, SpendWise simplifies personal finance management by bringing all your transactions into a single platform.
+
 
 ---
 
