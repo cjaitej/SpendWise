@@ -20,7 +20,7 @@
 
 In today's digital world, people make payments through multiple platforms such as Paytm, PhonePe, Google Pay, banking applications, credit cards, and other UPI services. As transactions are spread across different apps and accounts, it becomes difficult to track expenses and gain a complete understanding of personal spending habits.
 
-SpendWise addresses this challenge by automatically extracting transaction details from SMS notifications and consolidating them into a single, unified dashboard. Users no longer need to switch between multiple applications or manually record expenses. By bringing all transactions together in one place, SpendWise provides a clear overview of spending patterns, helps identify unnecessary expenses, and enables smarter financial decisions.
+SpendWise addresses this challenge by automatically extracting transaction details from SMS messages and consolidating them into a single, unified dashboard. Users no longer need to switch between multiple applications or manually record expenses. By bringing all transactions together in one place, SpendWise provides a clear overview of spending patterns, helps identify unnecessary expenses, and enables smarter financial decisions.
 
 ---
 
