@@ -12,6 +12,8 @@
 
 > Track expenses automatically. Understand spending instantly. Manage finances smarter.
 
+</div>
+
 ---
 
 ## 📖 What is SpendWise?
