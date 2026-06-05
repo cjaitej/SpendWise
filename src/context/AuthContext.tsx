@@ -192,9 +192,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const localBudgets = await LocalDB.getBudgets(user.id);
 
         if (localTransactions.length > 0) {
+          const formattedTransactions = localTransactions.map((t) => ({
+            id: t.id,
+            user_id: t.user_id,
+            amount: Number(t.amount),
+            transaction_type: t.transaction_type,
+            category: t.category,
+            merchant_name: t.merchant_name,
+            transaction_date: t.transaction_date,
+            source: t.source,
+            is_auto_detected: Boolean(t.is_auto_detected),
+            source_sms_id: t.source_sms_id,
+          }));
+
           const { error } = await supabase
             .from("transactions")
-            .upsert(localTransactions);
+            .upsert(formattedTransactions);
           if (error) throw error;
         }
 
@@ -216,16 +229,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      setUser((prev) =>
-        prev ? { ...prev, storage_preference: preference } : null,
-      );
-
       const { error } = await supabase
         .from("profiles")
         .update({ storage_preference: preference })
         .eq("id", user.id);
 
       if (error) throw error;
+
+      setUser((prev) =>
+        prev ? { ...prev, storage_preference: preference } : null,
+      );
     } catch (error) {
       console.error("Failed to update preference", error);
     }

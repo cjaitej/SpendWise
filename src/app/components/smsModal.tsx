@@ -310,7 +310,7 @@ export default function Index({ onClose }: Props) {
       const granted = await requestSMSPermission();
 
       if (!granted) return;
-      const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+      const sixMonthsAgo = Date.now() - 180 * 24 * 60 * 60 * 1000;
       const savedTime = await AsyncStorage.getItem(LAST_SYNCED_TIME_KEY);
       const savedSmsId = await AsyncStorage.getItem(LAST_SYNCED_SMS_ID_KEY);
 
@@ -323,7 +323,7 @@ export default function Index({ onClose }: Props) {
         ? Number(savedTime)
         : latestTransaction?.transaction_date
           ? new Date(latestTransaction.transaction_date).getTime()
-          : oneYearAgo;
+          : sixMonthsAgo;
 
       const lastProcessedSmsId = savedSmsId
         ? Number(savedSmsId)

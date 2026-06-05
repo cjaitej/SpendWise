@@ -1,10 +1,12 @@
 import { LocalDB } from "@/libs/localDB/localDB";
 import { supabase } from "@/libs/supabase/client";
+import { randomUUID } from "expo-crypto";
 import {
   createContext,
   ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { useAuth } from "./AuthContext";
@@ -64,9 +66,13 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
   const isCloudEnabled = user?.storage_preference !== "device";
 
-  const now = new Date();
-  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth() - 5, 1),
+      endDate: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+    };
+  }, []);
 
   useEffect(() => {
     LocalDB.init();
@@ -80,18 +86,23 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const loadData = async () => {
-      await Promise.all([
-        loadTransactions(isCloudEnabled),
-        loadBudget(isCloudEnabled),
-      ]);
+      try {
+        await Promise.all([
+          loadTransactions(isCloudEnabled),
+          loadBudget(isCloudEnabled),
+        ]);
+      } catch (error) {
+        console.error("Failed to load cloud data, relying on local DB:", error);
+      }
     };
 
     loadData();
   }, [user?.id, isCloudEnabled]);
 
   const loadTransactions = async (isCloud = isCloudEnabled) => {
-    if (!user?.id) return; // Safety check
+    if (!user?.id) return;
 
+    // 1. Initial fast load from local DB
     const localData = await LocalDB.getTransactions(user.id);
     setTransaction(localData);
 
@@ -104,9 +115,12 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
         .lt("transaction_date", endDate.toISOString());
 
       if (error) throw error;
+
       if (data) {
         await LocalDB.syncTransactions(user.id, data);
-        setTransaction(data);
+
+        const updatedLocalData = await LocalDB.getTransactions(user.id);
+        setTransaction(updatedLocalData);
       }
     }
   };
@@ -125,7 +139,9 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       if (data) {
         await LocalDB.syncBudgets(user.id, data);
-        setBudget(data);
+
+        const updatedLocalBudgets = await LocalDB.getBudgets(user.id);
+        setBudget(updatedLocalBudgets);
       }
     }
   };
@@ -134,19 +150,31 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
     budgetData: Partial<Budget>,
     isCloud = isCloudEnabled,
   ) => {
-    await LocalDB.upsertBudget(budgetData);
+    const normalizedBudget = {
+      ...budgetData,
+      id: budgetData.id || randomUUID(),
+      category: budgetData.category ?? "overall",
+      amount: Number(budgetData.amount),
+    };
+
+    await LocalDB.upsertBudget(normalizedBudget);
 
     if (isCloud) {
-      const { error } = await supabase.from("budgets").upsert(
-        {
-          user_id: budgetData.user_id,
-          amount: Number(budgetData.amount),
-          category: budgetData.category ?? "overall",
-          period_type: budgetData.period_type,
-          start_date: budgetData.start_date,
-        },
-        { onConflict: "user_id,period_type,category" },
-      );
+      const { data, error } = await supabase
+        .from("budgets")
+        .upsert(
+          {
+            id: normalizedBudget.id,
+            user_id: budgetData.user_id,
+            amount: Number(budgetData.amount),
+            category: budgetData.category ?? "overall",
+            period_type: budgetData.period_type,
+            start_date: budgetData.start_date,
+          },
+          { onConflict: "user_id,period_type,category" },
+        )
+        .select();
+
       if (error) throw error;
     }
     await loadBudget(isCloud);
@@ -156,10 +184,14 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
     newTransactions: Partial<Transaction>[],
     isCloud = isCloudEnabled,
   ) => {
-    await LocalDB.insertTransactions(newTransactions);
+    const normalizedTransactions = newTransactions.map((t) => ({
+      ...t,
+      id: t.id || randomUUID(),
+    }));
+    await LocalDB.insertTransactions(normalizedTransactions);
 
     setTransaction((prev) => {
-      const updated = [...(newTransactions as Transaction[]), ...prev];
+      const updated = [...(normalizedTransactions as Transaction[]), ...prev];
       return updated.sort(
         (a, b) =>
           new Date(b.transaction_date).getTime() -
@@ -170,7 +202,7 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
     if (isCloud) {
       const { error } = await supabase
         .from("transactions")
-        .insert(newTransactions);
+        .insert(normalizedTransactions);
       if (error) console.error("Cloud sync failed:", error);
     }
   };

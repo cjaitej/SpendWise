@@ -40,6 +40,9 @@ export default function BudgetAllocationModal({
   // Pulled in budgets alongside createBudget here
   const { createBudget, budgets } = useTransaction();
 
+  const overallBudget = budgets.find(
+    (b) => b.category === "overall" && b.period_type === "monthly",
+  );
   const [budget, setBudget] = useState(10000);
 
   const [allocations, setAllocations] = useState([
@@ -80,7 +83,7 @@ export default function BudgetAllocationModal({
 
   const handleContinue = async () => {
     try {
-      if (!user?.id) return; // Guard clause to ensure user exists
+      if (!user?.id) return;
 
       const startDate = new Date().toISOString();
 

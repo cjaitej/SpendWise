@@ -34,7 +34,8 @@ export const LocalDB = {
         period_type TEXT NOT NULL,
         start_date TEXT NOT NULL,
         created_at TEXT,
-        updated_at TEXT
+        updated_at TEXT,
+        UNIQUE(user_id, period_type, category)
       );
     `);
   },
@@ -100,8 +101,17 @@ export const LocalDB = {
   upsertBudget: async (b: Partial<Budget>) => {
     await db.runAsync(
       `
-      INSERT OR REPLACE INTO budgets (id, user_id, category, amount, period_type, start_date, created_at, updated_at)
+      INSERT INTO budgets (
+      id, user_id, category, amount,
+      period_type, start_date,
+      created_at, updated_at
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, period_type, category)
+      DO UPDATE SET
+      amount = excluded.amount,
+      start_date = excluded.start_date,
+      updated_at = excluded.updated_at;
     `,
       [
         b.id ?? Crypto.randomUUID(),
