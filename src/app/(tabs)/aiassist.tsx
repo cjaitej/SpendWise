@@ -94,7 +94,7 @@ function ChatBox({ chat }: { chat: Message[] }) {
   );
 }
 
-export default function Aiassist() {
+export default async function Aiassist() {
   const suggestions = [
     "Where did I overspend this month?",
     "How much did I spend on food?",
@@ -111,6 +111,10 @@ export default function Aiassist() {
 
   const { user } = useAuth();
   const { transactions } = useTransaction();
+
+  const sanitizedTransactions = transactions.map(
+    ({ id, user_id, source_sms_id, updated_at, ...transaction }) => transaction,
+  );
 
   const handleSend = async (customMessage?: string) => {
     const finalMessage = customMessage || message;
@@ -131,7 +135,7 @@ export default function Aiassist() {
     try {
       const responseText = await getFinanceAIResponse({
         message: finalMessage,
-        transactions: transactions,
+        transactions: sanitizedTransactions,
         history: chat,
       });
 

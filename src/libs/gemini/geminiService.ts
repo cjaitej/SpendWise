@@ -8,7 +8,7 @@ export interface HistoryItem {
 
 interface ChatParams {
   message: string;
-  transactions: Transaction[];
+  transactions: Partial<Transaction>[];
   history?: HistoryItem[];
 }
 
