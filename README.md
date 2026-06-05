@@ -230,12 +230,6 @@ Supported methods:
 
 ---
 
-## 📜 License
-
-This project is licensed under the MIT License.
-
----
-
 ## 👨‍💻 Author
 
 **Jaitej C**
