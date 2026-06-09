@@ -344,7 +344,10 @@ export default function Index({ onClose }: Props) {
             const parsed: SMSMessage[] = JSON.parse(smsList);
             parsed.sort((a, b) => b.date - a.date);
 
-            const validBankIds = new Set(Object.keys(bankInfo));
+            // const validBankIds = new Set(Object.keys(bankInfo));
+            const validBankIds = new Set(
+              Object.keys(bankInfo).map((key) => key.toLowerCase()),
+            );
             const filtered: SMSMessage[] = [];
 
             for (const sms of parsed) {
@@ -370,7 +373,7 @@ export default function Index({ onClose }: Props) {
 
               const bankId = address.slice(firstDash + 1, lastDash);
 
-              if (!validBankIds.has(bankId)) continue;
+              if (!validBankIds.has(bankId.toLowerCase())) continue;
 
               if (isOtpMessage(sms.body)) {
                 continue;
